@@ -267,7 +267,6 @@ class LoginProvider extends ChangeNotifier {
       isLoading = false;
       safeChangeNotifier();
 
-      // 🔐 SAFE navigation
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
 
