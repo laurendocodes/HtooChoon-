@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Constants/plan_colors.dart';
 import 'package:htoochoon_flutter/Providers/login_provider.dart';
+import 'package:htoochoon_flutter/Providers/org_provider.dart';
 
 import 'package:htoochoon_flutter/Screens/AuthScreens/login_screen.dart';
 import 'package:htoochoon_flutter/Screens/AuthScreens/logister_parent.dart';
@@ -24,6 +25,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => LoginProvider()),
+        ChangeNotifierProvider(create: (context) => OrgProvider()),
       ],
       child: const MyApp(),
     ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Constants/plan_colors.dart';
 import 'package:htoochoon_flutter/Constants/text_constants.dart';
-import 'package:htoochoon_flutter/Screens/OrgScreens/org_core_home.dart';
+import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/org_core_home.dart';
 import 'package:htoochoon_flutter/Screens/UserScreens/free_user_home.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +67,7 @@ class PlanSelectionScreen extends StatelessWidget {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => OrgCoreHome(),
+                                    builder: (_) => OrgDashboardScreen(),
                                   ),
                                 );
                               }

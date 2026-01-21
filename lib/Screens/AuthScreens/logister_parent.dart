@@ -5,7 +5,7 @@ import 'package:htoochoon_flutter/Providers/login_provider.dart';
 import 'package:htoochoon_flutter/Screens/AdminScreens/admin_home_parent.dart';
 import 'package:htoochoon_flutter/Screens/AuthScreens/login_screen.dart';
 import 'package:htoochoon_flutter/Screens/AuthScreens/register_screen.dart';
-import 'package:htoochoon_flutter/Screens/OrgScreens/org_core_home.dart';
+import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/org_core_home.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/org_super_home.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/org_upgrade_screen.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/organization_plus_home.dart';
@@ -92,9 +92,7 @@ class _LogisterParentState extends State<LogisterParent> {
                 if (role == 'org') {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => PlanSelectionScreen(role: "org"),
-                    ),
+                    MaterialPageRoute(builder: (_) => MainDashboardWrapper()),
                   );
                 } else if (role == 'user') {
                   if (userType == "student" || userType == "teacher") {

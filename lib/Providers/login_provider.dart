@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:htoochoon_flutter/Screens/AuthScreens/login_screen.dart';
-import 'package:htoochoon_flutter/Screens/OrgScreens/org_core_home.dart';
+import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/org_core_home.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/org_super_home.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/organization_plus_home.dart';
 
@@ -133,7 +133,9 @@ class LoginProvider extends ChangeNotifier {
         if (plan == 'free') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => OrgCoreHome()), // or onboarding
+            MaterialPageRoute(
+              builder: (_) => MainDashboardWrapper(),
+            ), // or onboarding
           );
         } else if (plan == 'super') {
           Navigator.pushReplacement(
