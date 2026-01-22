@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "182356452628",
+    "project_id": "htoochoon-13840",
+    "storage_bucket": "htoochoon-13840.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:182356452628:android:95f83264210bb97d62ce01",
+        "android_client_info": {
+          "package_name": "com.example.htoochoon_flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "182356452628-jhn9idcb538iuai7psho02po1eaughe1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4qyBHI1yLnazK5wyES2OzWh4qkNNwRYo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "182356452628-jhn9idcb538iuai7psho02po1eaughe1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
