@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class NotificatonProvider extends ChangeNotifier {
   late TabController tabController;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   List<QueryDocumentSnapshot> invitations = [];
   List<QueryDocumentSnapshot> announcements = [];
@@ -18,7 +18,7 @@ class NotificatonProvider extends ChangeNotifier {
 
   /// Fetch invitations
   Future<void> fetchInvitations() async {
-    final snapshot = await _firestore
+    final snapshot = await _db
         .collection('invitations')
         .orderBy('createdAt', descending: true)
         .get();
@@ -29,7 +29,7 @@ class NotificatonProvider extends ChangeNotifier {
 
   /// Fetch announcements
   Future<void> fetchAnnouncements() async {
-    final snapshot = await _firestore
+    final snapshot = await _db
         .collection('announcements')
         .orderBy('createdAt', descending: true)
         .get();
@@ -46,7 +46,7 @@ class NotificatonProvider extends ChangeNotifier {
     required String title,
     required String body,
   }) async {
-    await _firestore.collection('invitations').add({
+    await _db.collection('invitations').add({
       'orgId': orgId,
       'email': email,
       'role': role,
@@ -55,6 +55,43 @@ class NotificatonProvider extends ChangeNotifier {
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<void> acceptInvitation({
+    required String orgId,
+    required String inviteId,
+    required String userId,
+    required String email,
+    required String role,
+  }) async {
+    final batch = _db.batch();
+
+    final inviteRef = _db
+        .collection('organizations')
+        .doc(orgId)
+        .collection('invitations')
+        .doc(inviteId);
+
+    final memberRef = _db
+        .collection('organizations')
+        .doc(orgId)
+        .collection('members')
+        .doc(userId);
+
+    batch.update(inviteRef, {
+      'status': 'accepted',
+      'respondedAt': FieldValue.serverTimestamp(),
+    });
+
+    batch.set(memberRef, {
+      'uid': userId,
+      'email': email,
+      'role': role,
+      'status': 'active',
+      'joinedAt': FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
   }
 
   @override

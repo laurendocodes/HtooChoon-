@@ -9,11 +9,13 @@ class OrgProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   String? _currentOrgId;
+  String? _currentUserId;
   String? _currentOrgName;
   bool _isLoading = false;
 
   bool get isLoading => _isLoading;
   String? get currentOrgId => _currentOrgId;
+  String? get currentUserId => _currentUserId;
   String? get currentOrgName => _currentOrgName;
 
   String? _role;
@@ -23,16 +25,32 @@ class OrgProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get userOrgs => _userOrgs;
 
   Future<void> initializeApp() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    _isLoading = true;
+    notifyListeners();
+
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+
+    if (firebaseUser == null) {
       _isLoading = false;
       notifyListeners();
       return;
     }
 
-    // Try to load last active org or default to personal view
-    // For now, we just fetch available orgs
+    // ✅ SET CURRENT USER ID
+    _currentUserId = firebaseUser.uid;
+
+    // Optional but recommended
+    final userDoc = await _db.collection('users').doc(_currentUserId).get();
+
+    if (userDoc.exists) {
+      _role = userDoc.data()?['role'];
+    }
+
+    // Fetch orgs user belongs to
     await fetchUserOrgs();
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   // Create a new Organization
@@ -166,7 +184,6 @@ class OrgProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Invite a user to the current organization
   Future<void> inviteMember(
     String email,
     String role, {
@@ -179,7 +196,7 @@ class OrgProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Check if user exists
+      // 1️⃣ Check if user exists
       final userQuery = await _db
           .collection('users')
           .where('email', isEqualTo: email)
@@ -187,31 +204,76 @@ class OrgProvider extends ChangeNotifier {
           .get();
 
       if (userQuery.docs.isEmpty) {
-        print("user isnot exist");
-        print('Current org id $_currentOrgId');
-
-        throw Exception("User with email $email not found");
+        throw Exception("User with this email does not exist");
       }
 
-      await _db.collection('invitations').add({
-        'orgId': _currentOrgId,
-        'email': email,
-        'role': role,
-        'title': title,
-        'body': body,
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      print("created");
+      // 2️⃣ Prevent duplicate pending invite
+      final existingInvite = await _db
+          .collection('organizations')
+          .doc(_currentOrgId)
+          .collection('invitations')
+          .where('email', isEqualTo: email)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+
+      if (existingInvite.docs.isNotEmpty) {
+        throw Exception("Invitation already pending");
+      }
+
+      // 3️⃣ Create invitation
+      await _db
+          .collection('organizations')
+          .doc(_currentOrgId)
+          .collection('invitations')
+          .add({
+            'orgId': _currentOrgId,
+            'email': email,
+            'role': role,
+            'title': title,
+            'body': body,
+            'status': 'pending',
+            'invitedBy': _currentUserId, // IMPORTANT
+            'createdAt': FieldValue.serverTimestamp(),
+            'respondedAt': null,
+          });
 
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      print("no ");
       _isLoading = false;
       notifyListeners();
       rethrow;
     }
+  }
+
+  Stream<QuerySnapshot> fetchOrgInvitations({required String status}) {
+    return _db
+        .collection('organizations')
+        .doc(_currentOrgId)
+        .collection('invitations')
+        .where('status', isEqualTo: status)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  Future<void> cancelInvitation({required String inviteId}) async {
+    if (_currentOrgId == null) return;
+
+    await _db
+        .collection('organizations')
+        .doc(_currentOrgId)
+        .collection('invitations')
+        .doc(inviteId)
+        .delete();
+  }
+
+  Stream<QuerySnapshot> fetchMyInvitations(String email) {
+    return _db
+        .collectionGroup('invitations')
+        .where('email', isEqualTo: email)
+        .where('status', isEqualTo: 'pending')
+        .snapshots();
   }
 
   /// Fetch members of the current organization

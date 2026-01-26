@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:htoochoon_flutter/Providers/login_provider.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Providers/theme_provider.dart';
+import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/invitation_screen.dart';
 import 'package:provider/provider.dart';
 import 'OrgWidgets/org_dashboard_widgets.dart';
 
@@ -274,9 +275,46 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
                   // 2. Stats Cards
                   Row(
                     children: [
-                      _buildStatCard("Active Classes", "8", Colors.blue),
-                      _buildStatCard("Total Students", "124", Colors.green),
-                      _buildStatCard("Pending Invites", "3", Colors.orange),
+                      _buildStatCard(
+                        "Active Classes",
+                        "8",
+                        Colors.blue,
+                        ontap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const InvitationsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildStatCard(
+                        "Total Students",
+                        "124",
+                        Colors.green,
+                        ontap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const InvitationsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      _buildStatCard(
+                        "Pending Invites",
+                        "3",
+                        Colors.orange,
+                        ontap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const InvitationsScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -327,45 +365,55 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
 
   // --- Helper Widgets ---
 
-  Widget _buildStatCard(String title, String count, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String count,
+    Color color, {
+    required VoidCallback? ontap,
+  }) {
     return Expanded(
-      child: Container(
-        margin: const EdgeInsets.only(right: 16),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+      child: InkWell(
+        onTap: ontap,
+        child: Container(
+          margin: const EdgeInsets.only(right: 16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withOpacity(0.1),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(
+                  Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.05,
+                ),
+                blurRadius: 10,
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(
-                Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.05,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
+                ),
               ),
-              blurRadius: 10,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              const SizedBox(height: 8),
+              Text(
+                count,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              count,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
