@@ -248,13 +248,20 @@ class OrgProvider extends ChangeNotifier {
   }
 
   Stream<QuerySnapshot> fetchOrgInvitations({required String status}) {
-    print("fetching org invitations $_currentOrgId");
+    print('Fetching invites');
+    print('OrgId: $_currentOrgId');
+    print('Status: $status');
+
+    if (_currentOrgId == null) {
+      print('OrgId is NULL');
+      return const Stream.empty();
+    }
+
     return _db
         .collection('organizations')
         .doc(_currentOrgId)
         .collection('invitations')
         .where('status', isEqualTo: status)
-        .orderBy('createdAt', descending: true)
         .snapshots();
   }
 

@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isOrgMember(orgId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+    }
+    
+    function getOrgRole(orgId) {
+      return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role;
+    }
+    
+    function isOrgAdmin(orgId) {
+      return isOrgMember(orgId) && getOrgRole(orgId) in ['owner', 'admin'];
+    }
+    
+    function isOrgTeacherOrAbove(orgId) {
+      return isOrgMember(orgId) && getOrgRole(orgId) in ['owner', 'admin', 'moderator', 'teacher'];
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Allow users to create their own document during signup
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Allow users to read and update their own document
+      allow read, update: if isOwner(userId);
+      
+      // Allow reading user documents by email for invitations (admins only in org context)
+      allow read: if isAuthenticated();
+    }
+    
+    // Organizations collection
+    match /organizations/{orgId} {
+      // Anyone authenticated can create an organization
+      allow create: if isAuthenticated();
+      
+      // Only members can read organization details
+      allow read: if isOrgMember(orgId);
+      
+      // Only admins can update/delete
+      allow update, delete: if isOrgAdmin(orgId);
+      
+      // Members subcollection
+      match /members/{userId} {
+        allow create, update, delete: if isOrgAdmin(orgId);
+        allow read: if isOrgMember(orgId);
+      }
+      
+      // Programs subcollection (Flat)
+      match /programs/{programId} {
+        allow create, update, delete: if isOrgTeacherOrAbove(orgId);
+        allow read: if isOrgMember(orgId);
+      }
+      
+      // Courses subcollection (Flat)
+      match /courses/{courseId} {
+        allow create, update, delete: if isOrgTeacherOrAbove(orgId);
+        allow read: if isOrgMember(orgId);
+      }
+      
+      // Classes subcollection (Flat)
+      match /classes/{classId} {
+        allow create, update, delete: if isOrgTeacherOrAbove(orgId);
+        allow read: if isOrgMember(orgId);
+      }
+
+      // Teachers subcollection (Flat)
+      match /teachers/{teacherId} {
+        allow create, update, delete: if isOrgAdmin(orgId);
+        allow read: if isOrgMember(orgId);
+      }
+
+      // Students subcollection (Flat)
+      match /students/{studentId} {
+        allow create, update, delete: if isOrgTeacherOrAbove(orgId);
+        allow read: if isOrgMember(orgId);
+      }
+    }
+    
+    // Invitations collection
+    match /invitations/{invitationId} {
+      // Allow org admins to create invitations for their org
+      allow create: if isOrgAdmin(request.resource.data.orgId);
+      
+      // Allow reading:
+      // 1. If user is admin of the org
+      // 2. If the invitation is for this user's email (requires checking invites by email)
+      allow read: if isAuthenticated(); // Simplified for now, can be restricted to isOrgAdmin(resource.data.orgId) || request.auth.token.email == resource.data.email
+      
+      allow update, delete: if isOrgAdmin(resource.data.orgId);
+    }
+  }
+}
