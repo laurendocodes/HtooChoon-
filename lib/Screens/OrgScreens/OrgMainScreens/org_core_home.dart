@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:htoochoon_flutter/Providers/login_provider.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Providers/theme_provider.dart';
+import 'package:htoochoon_flutter/Screens/LMS/class_detail_screen.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/invitation_screen.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/org_tabs/members_tab.dart';
 import 'package:provider/provider.dart';
@@ -1084,6 +1085,7 @@ class CourseDetailScreen extends StatelessWidget {
                   ),
                   title: Text(cls['name']), // e.g., "Batch 1 - Morning"
                   subtitle: Text("Teacher ID: ${cls['teacherId']}"),
+
                   trailing: ElevatedButton(
                     child: const Text("Manage"),
                     onPressed: () {
@@ -1134,7 +1136,8 @@ class CourseDetailScreen extends StatelessWidget {
                           stream: FirebaseFirestore.instance
                               .collection('organizations')
                               .doc(orgProvider.currentOrgId)
-                              .collection('teachers')
+                              .collection('members')
+                              .where('role', isEqualTo: 'teacher')
                               .snapshots(),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData)

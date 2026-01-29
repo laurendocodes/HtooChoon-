@@ -323,6 +323,8 @@ class _OrgContextLoaderState extends State<OrgContextLoader> {
                             await provider.createOrganization(
                               nameController.text,
                               'free',
+                              'active',
+                              false,
                             );
                             if (ctx.mounted) Navigator.pop(ctx);
                           } catch (e) {

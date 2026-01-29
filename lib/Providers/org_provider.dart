@@ -105,7 +105,12 @@ class OrgProvider extends ChangeNotifier {
   }
 
   // Create a new Organization
-  Future<void> createOrganization(String name, String plan) async {
+  Future<void> createOrganization(
+    String name,
+    String plan,
+    String planStatus,
+    bool verify,
+  ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -115,8 +120,10 @@ class OrgProvider extends ChangeNotifier {
 
       DocumentReference orgRef = await _db.collection('organizations').add({
         'name': name,
+        'verify': verify,
         'ownerId': user.uid,
-        'plan': plan, // 'free', 'plus', 'super'
+        'planType': plan, // 'free', 'plus', 'super'
+        'planStatus': planStatus, // 'active', 'due', 'cancelled'
         'createdAt': FieldValue.serverTimestamp(),
         'isActive': true,
       });
@@ -363,9 +370,10 @@ class OrgProvider extends ChangeNotifier {
 
   Future<void> createCourse(
     String title,
+
     String? programId,
     String syllabus, {
-    List<String>? categories, // NEW
+    List<String>? categories,
   }) async {
     if (_currentOrgId == null) return;
 
