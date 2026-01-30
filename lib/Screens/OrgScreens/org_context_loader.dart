@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/OrgWidgets/create_dialogs.dart';
 import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/org_core_home.dart';
@@ -45,7 +46,7 @@ class _OrgContextLoaderState extends State<OrgContextLoader> {
               elevation: 0,
               actions: [
                 IconButton(
-                  onPressed: () => _showCreateOrgDialog(context, orgProvider),
+                  onPressed: () => showCreateOrgDialog(context),
                   icon: const Icon(Icons.add_circle_outline),
                   tooltip: "Create Organization",
                 ),
@@ -218,7 +219,6 @@ class _OrgContextLoaderState extends State<OrgContextLoader> {
                             ),
                           ),
 
-                          // Arrow
                           Icon(
                             Icons.arrow_forward_ios_rounded,
                             size: 16,
@@ -232,14 +232,14 @@ class _OrgContextLoaderState extends State<OrgContextLoader> {
               },
             ),
             floatingActionButton: FloatingActionButton.extended(
-              onPressed: () => _showCreateOrgDialog(context, orgProvider),
+              onPressed: () => showCreateOrgDialog(context),
               icon: const Icon(Icons.add),
               label: const Text("New Organization"),
             ),
           );
         }
 
-        // Default Empty State
+        //Default Empty State
         return Scaffold(
           body: Center(
             child: Padding(
@@ -268,16 +268,13 @@ class _OrgContextLoaderState extends State<OrgContextLoader> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () =>
-                          _showCreateOrgDialog(context, orgProvider),
+                      onPressed: () => showCreateOrgDialog(context),
                       child: const Text("Create Organization"),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextButton.icon(
-                    onPressed: () {
-                      // Join Function
-                    },
+                    onPressed: () {},
                     icon: const Icon(Icons.vpn_key_outlined),
                     label: const Text("Join with Invite Code"),
                   ),
@@ -287,68 +284,6 @@ class _OrgContextLoaderState extends State<OrgContextLoader> {
           ),
         );
       },
-    );
-  }
-
-  void _showCreateOrgDialog(BuildContext context, OrgProvider provider) {
-    final nameController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) {
-          bool isCreating = false;
-
-          return AlertDialog(
-            title: const Text("New Organization"),
-            content: TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: "Organization Name",
-                hintText: "e.g. Hope Academy",
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isCreating ? null : () => Navigator.pop(ctx),
-                child: const Text("Cancel"),
-              ),
-              ElevatedButton(
-                onPressed: isCreating
-                    ? null
-                    : () async {
-                        if (nameController.text.isNotEmpty) {
-                          setState(() => isCreating = true);
-                          try {
-                            await provider.createOrganization(
-                              nameController.text,
-                              'free',
-                              'active',
-                              false,
-                            );
-                            if (ctx.mounted) Navigator.pop(ctx);
-                          } catch (e) {
-                            if (ctx.mounted) {
-                              setState(() => isCreating = false);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Error: $e")),
-                              );
-                            }
-                          }
-                        }
-                      },
-                child: isCreating
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text("Create"),
-              ),
-            ],
-          );
-        },
-      ),
     );
   }
 

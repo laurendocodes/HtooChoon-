@@ -8,6 +8,9 @@ class OrgProvider extends ChangeNotifier {
   bool isDisposed = false;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   // ignore: unused_field
+  Map<String, dynamic>? _orgData;
+  Map<String, dynamic>? get orgData => _orgData;
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   List<Map<String, dynamic>> _teachers = [];
   List<Map<String, dynamic>> get teachers => _teachers;
@@ -30,6 +33,18 @@ class OrgProvider extends ChangeNotifier {
 
   List<Map<String, dynamic>> _userOrgs = [];
   List<Map<String, dynamic>> get userOrgs => _userOrgs;
+  bool get hasOrgLoaded => _orgData != null;
+
+  bool get hasActivePlan {
+    try {
+      _requireActivePlan();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String get planType => _orgData?['plan']?['planId'] ?? 'none';
 
   //Filter member
 
@@ -105,50 +120,249 @@ class OrgProvider extends ChangeNotifier {
   }
 
   // Create a new Organization
-  Future<void> createOrganization(
-    String name,
-    String plan,
-    String planStatus,
-    bool verify,
-  ) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+  Future<void> createOrganization(String name, String description) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
 
-    try {
-      _isLoading = true;
-      notifyListeners();
+    final orgRef = await _db.collection('organizations').add({
+      'name': name,
+      'description': description,
+      'logoUrl': '',
+      'ownerId': uid,
+      'createdAt': FieldValue.serverTimestamp(),
+      'plan': {
+        'planId': 'trial',
+        'status': 'trial',
+        'paymentType': 'free',
+        'startAt': FieldValue.serverTimestamp(),
+        'endAt': Timestamp.fromDate(
+          DateTime.now().add(const Duration(days: 14)),
+        ),
+        'limitsSnapshot': {
+          'programs': 3,
+          'courses': 5,
+          'classes': 5,
+          'teachers': 2,
+          'students': 50,
+        },
+        'featuresSnapshot': {
+          'liveSessions': false,
+          'assignments': true,
+          'analytics': false,
+        },
+      },
+    });
 
-      DocumentReference orgRef = await _db.collection('organizations').add({
-        'name': name,
-        'verify': verify,
-        'ownerId': user.uid,
-        'planType': plan, // 'free', 'plus', 'super'
-        'planStatus': planStatus, // 'active', 'due', 'cancelled'
-        'createdAt': FieldValue.serverTimestamp(),
-        'isActive': true,
-      });
+    await orgRef.collection('members').doc(uid).set({
+      'uid': uid,
+      'role': 'owner',
+      'email': FirebaseAuth.instance.currentUser!.email,
+      'joinedAt': FieldValue.serverTimestamp(),
+    });
+  }
 
-      // Add user as OWNER member of this org
-      await orgRef.collection('members').doc(user.uid).set({
-        'uid': user.uid,
-        'role': 'owner', // Creator is owner
-        'email': user.email,
-        'joinedAt': FieldValue.serverTimestamp(),
-      });
+  // Future<void> createOrganization(
+  //   String name,
+  //   String plan,
+  //   String planStatus,
+  //   bool verify,
+  // ) async {
+  //   final user = FirebaseAuth.instance.currentUser;
+  //   if (user == null) return;
+  //
+  //   try {
+  //     _isLoading = true;
+  //     notifyListeners();
+  //
+  //     DocumentReference orgRef = await _db.collection('organizations').add({
+  //       'name': name,
+  //       'verify': verify,
+  //       'ownerId': user.uid,
+  //       'planType': plan, // 'free', 'plus', 'super'
+  //       'planStatus': planStatus, // 'active', 'due', 'cancelled'
+  //       'createdAt': FieldValue.serverTimestamp(),
+  //       'isActive': true,
+  //     });
+  //
+  //     // Add user as OWNER member of this org
+  //     await orgRef.collection('members').doc(user.uid).set({
+  //       'uid': user.uid,
+  //       'role': 'owner', // Creator is owner
+  //       'email': user.email,
+  //       'joinedAt': FieldValue.serverTimestamp(),
+  //     });
+  //
+  //     // Switch to this new org context immediately
+  //     await switchOrganization(orgRef.id, name, 'owner');
+  //
+  //     // Refresh org list
+  //     await fetchUserOrgs();
+  //
+  //     _isLoading = false;
+  //     notifyListeners();
+  //   } catch (e) {
+  //     _isLoading = false;
+  //     notifyListeners();
+  //     rethrow;
+  //   }
+  // }
 
-      // Switch to this new org context immediately
-      await switchOrganization(orgRef.id, name, 'owner');
+  // --- 1. Program Management ---
+  // Future<void> createProgram(String name, String description) async {
+  //   if (_currentOrgId == null) return;
+  //   try {
+  //     _isLoading = true;
+  //     notifyListeners();
+  //     await _db
+  //         .collection('organizations')
+  //         .doc(_currentOrgId)
+  //         .collection('programs')
+  //         .add({
+  //           'name': name,
+  //           'description': description,
+  //           'createdAt': FieldValue.serverTimestamp(),
+  //         });
+  //     print("created program  $name");
+  //     _isLoading = false;
+  //     notifyListeners();
+  //   } catch (e) {
+  //     _isLoading = false;
+  //     notifyListeners();
+  //     rethrow;
+  //   }
+  // }
 
-      // Refresh org list
-      await fetchUserOrgs();
+  Future<void> createProgram(String name, String description) async {
+    _requireActivePlan();
 
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-      rethrow;
+    await _db
+        .collection('organizations')
+        .doc(_currentOrgId)
+        .collection('programs')
+        .add({
+          'name': name,
+          'description': description,
+          'coverImage': '',
+          'createdAt': FieldValue.serverTimestamp(),
+          'createdBy': _currentUserId,
+          'isArchived': false,
+        });
+  }
+
+  // Future<void> createCourse(
+  //   String title,
+  //
+  //   String? programId,
+  //   String syllabus, {
+  //   List<String>? categories,
+  // }) async {
+  //   if (_currentOrgId == null) return;
+  //
+  //   try {
+  //     await _db
+  //         .collection('organizations')
+  //         .doc(_currentOrgId)
+  //         .collection('courses')
+  //         .add({
+  //           'title': title,
+  //           'programId': programId,
+  //           'syllabus': syllabus,
+  //           'categories': categories ?? [],
+  //           'status': 'DRAFT',
+  //           'createdAt': FieldValue.serverTimestamp(),
+  //         });
+  //   } catch (e) {
+  //     rethrow;
+  //   }
+  // }
+  void _requireActivePlan() {
+    final plan = _orgData?['plan'];
+
+    if (plan == null) {
+      throw Exception("No plan found. Please upgrade.");
     }
+
+    final status = plan['status'];
+    if (status != 'active' && status != 'trial') {
+      throw Exception("Your plan is inactive. Please upgrade.");
+    }
+
+    final endAt = plan['endAt'];
+    if (endAt != null &&
+        (endAt as Timestamp).toDate().isBefore(DateTime.now())) {
+      throw Exception("Your plan has expired. Please upgrade.");
+    }
+  }
+
+  void _requireFeature(String featureKey) {
+    final features = _orgData?['plan']?['featuresSnapshot'];
+    if (features?[featureKey] != true) {
+      throw Exception("This feature is not included in your plan.");
+    }
+  }
+
+  Future<void> createCourse({
+    required String title,
+    required String description,
+    String? programId,
+    required String category,
+    required String level,
+    required int price,
+    required int durationWeeks,
+    required int totalClasses,
+    required int seats,
+  }) async {
+    _requireActivePlan();
+
+    await _db
+        .collection('organizations')
+        .doc(_currentOrgId)
+        .collection('courses')
+        .add({
+          'title': title,
+          'description': description,
+          'programId': programId,
+          'thumbnailUrl': '',
+          'category': category,
+          'level': level,
+          'language': 'English',
+          'price': price,
+          'durationWeeks': durationWeeks,
+          'totalClasses': totalClasses,
+          'seats': seats,
+          'status': 'draft',
+          'createdAt': FieldValue.serverTimestamp(),
+          'createdBy': _currentUserId,
+        });
+  }
+
+  Future<void> createClass({
+    required String courseId,
+    required String className,
+    required String teacherId,
+    required DateTime startDate,
+    required DateTime endDate,
+    required List<String> days,
+    required String time,
+    required int maxStudents,
+  }) async {
+    _requireActivePlan();
+
+    await _db
+        .collection('organizations')
+        .doc(_currentOrgId)
+        .collection('classes')
+        .add({
+          'name': className,
+          'courseId': courseId,
+          'teacherId': teacherId,
+          'startDate': Timestamp.fromDate(startDate),
+          'endDate': Timestamp.fromDate(endDate),
+          'schedule': {'days': days, 'time': time},
+          'status': 'upcoming',
+          'studentCount': 0,
+          'maxStudents': maxStudents,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
   }
 
   Future<void> fetchUserOrgs() async {
@@ -161,8 +375,8 @@ class OrgProvider extends ChangeNotifier {
 
       List<Map<String, dynamic>> orgs = [];
 
-      // WORKAROUND: First, fetch organizations where user is the owner
-      // This doesn't require a collectionGroup index
+      // First, fetch organizations where user is the owner
+
       //Todo add different screen where the user is a mod or a teacher
       final ownedOrgs = await _db
           .collection('organizations')
@@ -178,8 +392,6 @@ class OrgProvider extends ChangeNotifier {
         });
       }
 
-      // OPTIONAL: Try to fetch memberships via collectionGroup
-      // This will fail if the index doesn't exist, but we'll catch the error
       try {
         final memberships = await _db
             .collectionGroup('members')
@@ -230,9 +442,22 @@ class OrgProvider extends ChangeNotifier {
     String name,
     String role,
   ) async {
+    _isLoading = true;
+    notifyListeners();
+
     _currentOrgId = orgId;
     _currentOrgName = name;
     _role = role;
+
+    final doc = await _db.collection('organizations').doc(orgId).get();
+
+    if (!doc.exists) {
+      throw Exception("Organization not found");
+    }
+
+    _orgData = {'id': doc.id, ...doc.data()!};
+
+    _isLoading = false;
     notifyListeners();
   }
 
@@ -255,7 +480,7 @@ class OrgProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // 1️⃣ Check if user exists
+      // 1. Check if user exists
       final userQuery = await _db
           .collection('users')
           .where('email', isEqualTo: email)
@@ -266,7 +491,7 @@ class OrgProvider extends ChangeNotifier {
         throw Exception("User with this email does not exist");
       }
 
-      // 2️⃣ Prevent duplicate pending invite
+      // 2. Prevent duplicate pending invite
       final existingInvite = await _db
           .collection('organizations')
           .doc(_currentOrgId)
@@ -280,7 +505,7 @@ class OrgProvider extends ChangeNotifier {
         throw Exception("Invitation already pending");
       }
 
-      // 3️⃣ Create invitation
+      // 3. Create invitation
       await _db
           .collection('organizations')
           .doc(_currentOrgId)
@@ -343,58 +568,6 @@ class OrgProvider extends ChangeNotifier {
         .snapshots();
   }
 
-  // --- 1. Program Management ---
-  Future<void> createProgram(String name, String description) async {
-    if (_currentOrgId == null) return;
-    try {
-      _isLoading = true;
-      notifyListeners();
-      await _db
-          .collection('organizations')
-          .doc(_currentOrgId)
-          .collection('programs')
-          .add({
-            'name': name,
-            'description': description,
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-      print("created program  $name");
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-      rethrow;
-    }
-  }
-
-  Future<void> createCourse(
-    String title,
-
-    String? programId,
-    String syllabus, {
-    List<String>? categories,
-  }) async {
-    if (_currentOrgId == null) return;
-
-    try {
-      await _db
-          .collection('organizations')
-          .doc(_currentOrgId)
-          .collection('courses')
-          .add({
-            'title': title,
-            'programId': programId,
-            'syllabus': syllabus,
-            'categories': categories ?? [],
-            'status': 'DRAFT',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   Future<void> updateStudentStatus(String studentId, String status) async {
     await _db
         .collection('organizations')
@@ -414,29 +587,6 @@ class OrgProvider extends ChangeNotifier {
         .doc(courseId)
         .update({'status': newStatus});
     notifyListeners();
-  }
-
-  // --- 3. Class Management ---
-  Future<void> createClass({
-    required String courseId,
-    required String teacherId,
-    required String className,
-    required DateTime startDate,
-  }) async {
-    if (_currentOrgId == null) return;
-    // Create the class document
-    await _db
-        .collection('organizations')
-        .doc(_currentOrgId)
-        .collection('classes')
-        .add({
-          'name': className,
-          'courseId': courseId,
-          'teacherId': teacherId,
-          'startDate': startDate,
-          'status': 'upcoming',
-          'studentCount': 0,
-        });
   }
 
   // --- 4. Class Interiors: Assignments, Exams, Live Sessions ---

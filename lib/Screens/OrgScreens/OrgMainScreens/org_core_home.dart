@@ -5,6 +5,7 @@ import 'package:htoochoon_flutter/Providers/login_provider.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Providers/theme_provider.dart';
 import 'package:htoochoon_flutter/Screens/LMS/class_detail_screen.dart';
+import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/OrgWidgets/create_widgets.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/invitation_screen.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/org_tabs/members_tab.dart';
 import 'package:provider/provider.dart';
@@ -35,7 +36,6 @@ class _MainDashboardWrapperState extends State<MainDashboardWrapper> {
     return Scaffold(
       body: Row(
         children: [
-          // Custom Sidebar Container
           Container(
             width: isExtended ? 250 : 80,
             color: Theme.of(context).cardColor,
@@ -153,7 +153,6 @@ class _MainDashboardWrapperState extends State<MainDashboardWrapper> {
 
           const SizedBox(height: 8),
 
-          // Admin Profile Card
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -341,7 +340,8 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
                         icon: Icons.create_new_folder,
                         label: "Create Program",
                         onTap: () =>
-                            _showCreateDialog(context, "Program", orgProvider),
+                            showCreateProgramDialog(context, orgProvider),
+                        // _showCreateDialog(context, "Program", orgProvider),
                       ),
                       _buildActionButton(
                         icon: Icons.book,
@@ -357,8 +357,9 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
                       _buildActionButton(
                         icon: Icons.calendar_today,
                         label: "Create Class",
-                        onTap: () =>
-                            _showCreateClassDialog(context, orgProvider),
+                        onTap: () {
+                          // _showCreateClassDialog(context, orgProvider),
+                        },
                       ),
                     ],
                   ),
@@ -568,146 +569,162 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
   ) {
     final titleController = TextEditingController();
     final descController = TextEditingController();
-    String? selectedProgramId;
 
-    final List<String> allCategories = [
+    final priceController = TextEditingController();
+    final durationController = TextEditingController();
+    final classesController = TextEditingController();
+    final seatsController = TextEditingController();
+
+    String? selectedProgramId;
+    String selectedLevel = 'Beginner';
+    String selectedCategory = 'Computer Science';
+
+    final List<String> categories = [
       'Computer Science',
       'Math',
       'Architecture',
       'Design',
       'Business',
     ];
-    List<String> selectedCategories = [];
+
+    final List<String> levels = ['Beginner', 'Intermediate', 'Advanced'];
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (sbContext, setState) {
+        builder: (_, setState) {
           bool isCreating = false;
 
           return AlertDialog(
             title: Text("Create New $type"),
             content: SingleChildScrollView(
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Title
                   TextField(
                     controller: titleController,
                     decoration: InputDecoration(
                       labelText: type == "Program"
                           ? "Program Name"
                           : "Course Title",
-                      hintText: type == "Program"
-                          ? "e.g. Computer Science"
-                          : "e.g. Intro to Flutter",
                     ),
                   ),
                   const SizedBox(height: 12),
 
                   TextField(
                     controller: descController,
-                    decoration: InputDecoration(
-                      labelText: type == "Program"
-                          ? "Description"
-                          : "Syllabus / Description",
-                    ),
                     maxLines: 3,
+                    decoration: const InputDecoration(labelText: "Description"),
                   ),
 
                   if (type == "Course") ...[
                     const SizedBox(height: 12),
 
-                    //Program dropdown
+                    /// Program
                     StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('organizations')
                           .doc(provider.currentOrgId)
                           .collection('programs')
                           .snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData)
+                      builder: (_, snapshot) {
+                        if (!snapshot.hasData) {
                           return const LinearProgressIndicator();
-                        final programs = snapshot.data!.docs;
-
+                        }
                         return DropdownButtonFormField<String>(
                           value: selectedProgramId,
                           decoration: const InputDecoration(
-                            labelText: "Assign to Program (Optional)",
+                            labelText: "Program (Optional)",
                           ),
-                          items: programs.map((doc) {
+                          items: snapshot.data!.docs.map((doc) {
                             return DropdownMenuItem(
                               value: doc.id,
-                              child: Text(
-                                doc['name'],
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              child: Text(doc['name']),
                             );
                           }).toList(),
-                          onChanged: (val) =>
-                              setState(() => selectedProgramId = val),
+                          onChanged: (v) => setState(() {
+                            selectedProgramId = v;
+                          }),
                         );
                       },
                     ),
 
                     const SizedBox(height: 12),
 
-                    //Categories selection
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Select Categories",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Colors.grey[700],
-                        ),
+                    /// Category
+                    DropdownButtonFormField<String>(
+                      value: selectedCategory,
+                      decoration: const InputDecoration(labelText: "Category"),
+                      items: categories
+                          .map(
+                            (c) => DropdownMenuItem(value: c, child: Text(c)),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => selectedCategory = v!),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    /// Level
+                    DropdownButtonFormField<String>(
+                      value: selectedLevel,
+                      decoration: const InputDecoration(labelText: "Level"),
+                      items: levels
+                          .map(
+                            (l) => DropdownMenuItem(value: l, child: Text(l)),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => selectedLevel = v!),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    /// Price
+                    TextField(
+                      controller: priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: "Price"),
+                    ),
+
+                    /// Duration
+                    TextField(
+                      controller: durationController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: "Duration (weeks)",
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      children: allCategories.map((cat) {
-                        final isSelected = selectedCategories.contains(cat);
-                        return FilterChip(
-                          label: Text(cat),
-                          selected: isSelected,
-                          onSelected: (_) {
-                            setState(() {
-                              if (isSelected) {
-                                selectedCategories.remove(cat);
-                              } else {
-                                selectedCategories.add(cat);
-                              }
-                            });
-                          },
-                          selectedColor: Theme.of(context).colorScheme.primary,
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black87,
-                          ),
-                        );
-                      }).toList(),
+
+                    /// Total Classes
+                    TextField(
+                      controller: classesController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: "Total Classes",
+                      ),
+                    ),
+
+                    /// Seats
+                    TextField(
+                      controller: seatsController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: "Available Seats",
+                      ),
                     ),
                   ],
                 ],
               ),
             ),
             actions: [
-              // Cancel Button
               TextButton(
                 onPressed: isCreating ? null : () => Navigator.pop(ctx),
                 child: const Text("Cancel"),
               ),
-
-              // Create Button
               ElevatedButton(
                 onPressed: isCreating
                     ? null
                     : () async {
-                        if (titleController.text.isEmpty) return;
-
                         setState(() => isCreating = true);
-
                         try {
                           if (type == "Program") {
                             await provider.createProgram(
@@ -716,36 +733,28 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
                             );
                           } else {
                             await provider.createCourse(
-                              titleController.text.trim(),
-                              selectedProgramId,
-                              descController.text.trim(),
-                              categories: selectedCategories,
+                              title: titleController.text.trim(),
+                              description: descController.text.trim(),
+                              programId: selectedProgramId,
+                              category: selectedCategory,
+                              level: selectedLevel,
+                              price: int.parse(priceController.text),
+                              durationWeeks: int.parse(durationController.text),
+                              totalClasses: int.parse(classesController.text),
+                              seats: int.parse(seatsController.text),
                             );
                           }
 
-                          if (ctx.mounted) {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("$type Created Successfully!"),
-                              ),
-                            );
-                          }
+                          if (ctx.mounted) Navigator.pop(ctx);
                         } catch (e) {
-                          if (ctx.mounted) {
-                            setState(() => isCreating = false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Error: $e")),
-                            );
-                          }
+                          setState(() => isCreating = false);
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(e.toString())));
                         }
                       },
                 child: isCreating
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const CircularProgressIndicator(strokeWidth: 2)
                     : const Text("Create"),
               ),
             ],
@@ -855,40 +864,40 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
                 onPressed: isCreating
                     ? null
                     : () async {
-                        if (nameController.text.isNotEmpty &&
-                            selectedCourseId != null &&
-                            selectedTeacherId != null) {
-                          setState(() => isCreating = true);
-                          try {
-                            await provider.createClass(
-                              courseId: selectedCourseId!,
-                              teacherId: selectedTeacherId!,
-                              className: nameController.text,
-                              startDate: DateTime.now(),
-                            );
-                            if (ctx.mounted) {
-                              Navigator.pop(ctx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Class Created Successfully!"),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (ctx.mounted) {
-                              setState(() => isCreating = false);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Error: $e")),
-                              );
-                            }
-                          }
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Please fill all fields"),
-                            ),
-                          );
-                        }
+                        // if (nameController.text.isNotEmpty &&
+                        //     selectedCourseId != null &&
+                        //     selectedTeacherId != null) {
+                        //   setState(() => isCreating = true);
+                        //   try {
+                        //     await provider.createClass(
+                        //       courseId: selectedCourseId!,
+                        //       teacherId: selectedTeacherId!,
+                        //       className: nameController.text,
+                        //       startDate: DateTime.now(),
+                        //     );
+                        //     if (ctx.mounted) {
+                        //       Navigator.pop(ctx);
+                        //       ScaffoldMessenger.of(context).showSnackBar(
+                        //         const SnackBar(
+                        //           content: Text("Class Created Successfully!"),
+                        //         ),
+                        //       );
+                        //     }
+                        //   } catch (e) {
+                        //     if (ctx.mounted) {
+                        //       setState(() => isCreating = false);
+                        //       ScaffoldMessenger.of(context).showSnackBar(
+                        //         SnackBar(content: Text("Error: $e")),
+                        //       );
+                        //     }
+                        //   }
+                        // } else {
+                        //   ScaffoldMessenger.of(context).showSnackBar(
+                        //     const SnackBar(
+                        //       content: Text("Please fill all fields"),
+                        //     ),
+                        //   );
+                        // }
                       },
                 child: isCreating
                     ? const SizedBox(
@@ -905,324 +914,324 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
     );
   }
 }
-
-class ProgramDetailScreen extends StatelessWidget {
-  final String programId;
-  final String programName;
-
-  const ProgramDetailScreen({
-    super.key,
-    required this.programId,
-    required this.programName,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final orgProvider = Provider.of<OrgProvider>(context, listen: false);
-
-    return Scaffold(
-      appBar: AppBar(title: Text("$programName > Courses")),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('organizations')
-            .doc(orgProvider.currentOrgId)
-            .collection('courses')
-            .where('programId', isEqualTo: programId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData)
-            return const Center(child: CircularProgressIndicator());
-
-          var courses = snapshot.data!.docs;
-
-          return ListView.builder(
-            itemCount: courses.length,
-            itemBuilder: (context, index) {
-              var course = courses[index];
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.book, color: Colors.blue),
-                  title: Text(course['title']),
-                  subtitle: Text(
-                    "Status: ${course['status']}",
-                  ), // DRAFT, READY, LIVE
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CourseDetailScreen(
-                          courseId: course.id,
-                          courseTitle: course['title'],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () {
-          final titleController = TextEditingController();
-          final descController = TextEditingController();
-          showDialog(
-            context: context,
-            builder: (ctx) => StatefulBuilder(
-              builder: (sbContext, setState) {
-                bool isCreating = false;
-                return AlertDialog(
-                  title: const Text("Add Course to Program"),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: "Course Title",
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: descController,
-                        decoration: const InputDecoration(
-                          labelText: "Syllabus / Description",
-                        ),
-                        maxLines: 3,
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: isCreating ? null : () => Navigator.pop(ctx),
-                      child: const Text("Cancel"),
-                    ),
-                    ElevatedButton(
-                      onPressed: isCreating
-                          ? null
-                          : () async {
-                              if (titleController.text.isNotEmpty) {
-                                setState(() => isCreating = true);
-                                try {
-                                  await orgProvider.createCourse(
-                                    titleController.text,
-                                    programId,
-                                    descController.text,
-                                  );
-                                  if (ctx.mounted) Navigator.pop(ctx);
-                                } catch (e) {
-                                  if (ctx.mounted) {
-                                    setState(() => isCreating = false);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text("Error: $e")),
-                                    );
-                                  }
-                                }
-                              }
-                            },
-                      child: isCreating
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text("Create"),
-                    ),
-                  ],
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class CourseDetailScreen extends StatelessWidget {
-  final String courseId;
-  final String courseTitle;
-
-  const CourseDetailScreen({
-    super.key,
-    required this.courseId,
-    required this.courseTitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final orgProvider = Provider.of<OrgProvider>(context, listen: false);
-
-    return Scaffold(
-      appBar: AppBar(title: Text("$courseTitle > Classes")),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('organizations')
-            .doc(orgProvider.currentOrgId)
-            .collection('classes')
-            .where('courseId', isEqualTo: courseId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData)
-            return const Center(child: CircularProgressIndicator());
-
-          var classes = snapshot.data!.docs;
-
-          return ListView.builder(
-            itemCount: classes.length,
-            itemBuilder: (context, index) {
-              var cls = classes[index];
-              return Card(
-                elevation: 4,
-                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                child: ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Colors.teal,
-                    child: Icon(Icons.group, color: Colors.white),
-                  ),
-                  title: Text(cls['name']), // e.g., "Batch 1 - Morning"
-                  subtitle: Text("Teacher ID: ${cls['teacherId']}"),
-
-                  trailing: ElevatedButton(
-                    child: const Text("Manage"),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ClassInteriorDashboard(
-                            classId: cls.id,
-                            className: cls['name'],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: const Text("Add Class"),
-        onPressed: () {
-          final nameController = TextEditingController();
-          String? selectedTeacherId;
-
-          showDialog(
-            context: context,
-            builder: (ctx) => StatefulBuilder(
-              builder: (sbContext, setState) {
-                bool isCreating = false;
-                return AlertDialog(
-                  title: const Text("Create Class for Course"),
-                  content: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextField(
-                          controller: nameController,
-                          decoration: const InputDecoration(
-                            labelText: "Class Name",
-                            hintText: "e.g. Batch A",
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('organizations')
-                              .doc(orgProvider.currentOrgId)
-                              .collection('members')
-                              .where('role', isEqualTo: 'teacher')
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData)
-                              return const LinearProgressIndicator();
-                            final teachers = snapshot.data!.docs;
-                            return DropdownButtonFormField<String>(
-                              value: selectedTeacherId,
-                              isExpanded: true,
-                              decoration: const InputDecoration(
-                                labelText: "Assign Teacher",
-                              ),
-                              items: teachers.map((doc) {
-                                return DropdownMenuItem(
-                                  value: doc.id,
-                                  child: Text(doc['email'] ?? 'Unknown'),
-                                );
-                              }).toList(),
-                              onChanged: (val) => selectedTeacherId = val,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: isCreating ? null : () => Navigator.pop(ctx),
-                      child: const Text("Cancel"),
-                    ),
-                    ElevatedButton(
-                      onPressed: isCreating
-                          ? null
-                          : () async {
-                              if (nameController.text.isNotEmpty &&
-                                  selectedTeacherId != null) {
-                                setState(() => isCreating = true);
-                                try {
-                                  await orgProvider.createClass(
-                                    courseId: courseId,
-                                    teacherId: selectedTeacherId!,
-                                    className: nameController.text,
-                                    startDate: DateTime.now(),
-                                  );
-                                  if (ctx.mounted) {
-                                    Navigator.pop(ctx);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Class Created!"),
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (ctx.mounted) {
-                                    setState(() => isCreating = false);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text("Error: $e")),
-                                    );
-                                  }
-                                }
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Please fill all fields"),
-                                  ),
-                                );
-                              }
-                            },
-                      child: isCreating
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text("Create"),
-                    ),
-                  ],
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
+//
+// class ProgramDetailScreen extends StatelessWidget {
+//   final String programId;
+//   final String programName;
+//
+//   const ProgramDetailScreen({
+//     super.key,
+//     required this.programId,
+//     required this.programName,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final orgProvider = Provider.of<OrgProvider>(context, listen: false);
+//
+//     return Scaffold(
+//       appBar: AppBar(title: Text("$programName > Courses")),
+//       body: StreamBuilder<QuerySnapshot>(
+//         stream: FirebaseFirestore.instance
+//             .collection('organizations')
+//             .doc(orgProvider.currentOrgId)
+//             .collection('courses')
+//             .where('programId', isEqualTo: programId)
+//             .snapshots(),
+//         builder: (context, snapshot) {
+//           if (!snapshot.hasData)
+//             return const Center(child: CircularProgressIndicator());
+//
+//           var courses = snapshot.data!.docs;
+//
+//           return ListView.builder(
+//             itemCount: courses.length,
+//             itemBuilder: (context, index) {
+//               var course = courses[index];
+//               return Card(
+//                 child: ListTile(
+//                   leading: const Icon(Icons.book, color: Colors.blue),
+//                   title: Text(course['title']),
+//                   subtitle: Text(
+//                     "Status: ${course['status']}",
+//                   ), // DRAFT, READY, LIVE
+//                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+//                   onTap: () {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (_) => CourseDetailScreen(
+//                           courseId: course.id,
+//                           courseTitle: course['title'],
+//                         ),
+//                       ),
+//                     );
+//                   },
+//                 ),
+//               );
+//             },
+//           );
+//         },
+//       ),
+//       floatingActionButton: FloatingActionButton(
+//         child: const Icon(Icons.add),
+//         onPressed: () {
+//           final titleController = TextEditingController();
+//           final descController = TextEditingController();
+//           showDialog(
+//             context: context,
+//             builder: (ctx) => StatefulBuilder(
+//               builder: (sbContext, setState) {
+//                 bool isCreating = false;
+//                 return AlertDialog(
+//                   title: const Text("Add Course to Program"),
+//                   content: Column(
+//                     mainAxisSize: MainAxisSize.min,
+//                     children: [
+//                       TextField(
+//                         controller: titleController,
+//                         decoration: const InputDecoration(
+//                           labelText: "Course Title",
+//                         ),
+//                       ),
+//                       const SizedBox(height: 12),
+//                       TextField(
+//                         controller: descController,
+//                         decoration: const InputDecoration(
+//                           labelText: "Syllabus / Description",
+//                         ),
+//                         maxLines: 3,
+//                       ),
+//                     ],
+//                   ),
+//                   actions: [
+//                     TextButton(
+//                       onPressed: isCreating ? null : () => Navigator.pop(ctx),
+//                       child: const Text("Cancel"),
+//                     ),
+//                     ElevatedButton(
+//                       onPressed: isCreating
+//                           ? null
+//                           : () async {
+//                               if (titleController.text.isNotEmpty) {
+//                                 setState(() => isCreating = true);
+//                                 try {
+//                                   await orgProvider.createCourse(
+//                                     titleController.text,
+//                                     programId,
+//                                     descController.text,
+//                                   );
+//                                   if (ctx.mounted) Navigator.pop(ctx);
+//                                 } catch (e) {
+//                                   if (ctx.mounted) {
+//                                     setState(() => isCreating = false);
+//                                     ScaffoldMessenger.of(context).showSnackBar(
+//                                       SnackBar(content: Text("Error: $e")),
+//                                     );
+//                                   }
+//                                 }
+//                               }
+//                             },
+//                       child: isCreating
+//                           ? const SizedBox(
+//                               width: 20,
+//                               height: 20,
+//                               child: CircularProgressIndicator(strokeWidth: 2),
+//                             )
+//                           : const Text("Create"),
+//                     ),
+//                   ],
+//                 );
+//               },
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+// }
+//
+// class CourseDetailScreen extends StatelessWidget {
+//   final String courseId;
+//   final String courseTitle;
+//
+//   const CourseDetailScreen({
+//     super.key,
+//     required this.courseId,
+//     required this.courseTitle,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final orgProvider = Provider.of<OrgProvider>(context, listen: false);
+//
+//     return Scaffold(
+//       appBar: AppBar(title: Text("$courseTitle > Classes")),
+//       body: StreamBuilder<QuerySnapshot>(
+//         stream: FirebaseFirestore.instance
+//             .collection('organizations')
+//             .doc(orgProvider.currentOrgId)
+//             .collection('classes')
+//             .where('courseId', isEqualTo: courseId)
+//             .snapshots(),
+//         builder: (context, snapshot) {
+//           if (!snapshot.hasData)
+//             return const Center(child: CircularProgressIndicator());
+//
+//           var classes = snapshot.data!.docs;
+//
+//           return ListView.builder(
+//             itemCount: classes.length,
+//             itemBuilder: (context, index) {
+//               var cls = classes[index];
+//               return Card(
+//                 elevation: 4,
+//                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+//                 child: ListTile(
+//                   leading: const CircleAvatar(
+//                     backgroundColor: Colors.teal,
+//                     child: Icon(Icons.group, color: Colors.white),
+//                   ),
+//                   title: Text(cls['name']), // e.g., "Batch 1 - Morning"
+//                   subtitle: Text("Teacher ID: ${cls['teacherId']}"),
+//
+//                   trailing: ElevatedButton(
+//                     child: const Text("Manage"),
+//                     onPressed: () {
+//                       Navigator.push(
+//                         context,
+//                         MaterialPageRoute(
+//                           builder: (_) => ClassInteriorDashboard(
+//                             classId: cls.id,
+//                             className: cls['name'],
+//                           ),
+//                         ),
+//                       );
+//                     },
+//                   ),
+//                 ),
+//               );
+//             },
+//           );
+//         },
+//       ),
+//       floatingActionButton: FloatingActionButton.extended(
+//         icon: const Icon(Icons.add),
+//         label: const Text("Add Class"),
+//         onPressed: () {
+//           final nameController = TextEditingController();
+//           String? selectedTeacherId;
+//
+//           showDialog(
+//             context: context,
+//             builder: (ctx) => StatefulBuilder(
+//               builder: (sbContext, setState) {
+//                 bool isCreating = false;
+//                 return AlertDialog(
+//                   title: const Text("Create Class for Course"),
+//                   content: SingleChildScrollView(
+//                     child: Column(
+//                       mainAxisSize: MainAxisSize.min,
+//                       children: [
+//                         TextField(
+//                           controller: nameController,
+//                           decoration: const InputDecoration(
+//                             labelText: "Class Name",
+//                             hintText: "e.g. Batch A",
+//                           ),
+//                         ),
+//                         const SizedBox(height: 12),
+//                         StreamBuilder<QuerySnapshot>(
+//                           stream: FirebaseFirestore.instance
+//                               .collection('organizations')
+//                               .doc(orgProvider.currentOrgId)
+//                               .collection('members')
+//                               .where('role', isEqualTo: 'teacher')
+//                               .snapshots(),
+//                           builder: (context, snapshot) {
+//                             if (!snapshot.hasData)
+//                               return const LinearProgressIndicator();
+//                             final teachers = snapshot.data!.docs;
+//                             return DropdownButtonFormField<String>(
+//                               value: selectedTeacherId,
+//                               isExpanded: true,
+//                               decoration: const InputDecoration(
+//                                 labelText: "Assign Teacher",
+//                               ),
+//                               items: teachers.map((doc) {
+//                                 return DropdownMenuItem(
+//                                   value: doc.id,
+//                                   child: Text(doc['email'] ?? 'Unknown'),
+//                                 );
+//                               }).toList(),
+//                               onChanged: (val) => selectedTeacherId = val,
+//                             );
+//                           },
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                   actions: [
+//                     TextButton(
+//                       onPressed: isCreating ? null : () => Navigator.pop(ctx),
+//                       child: const Text("Cancel"),
+//                     ),
+//                     ElevatedButton(
+//                       onPressed: isCreating
+//                           ? null
+//                           : () async {
+//                               if (nameController.text.isNotEmpty &&
+//                                   selectedTeacherId != null) {
+//                                 setState(() => isCreating = true);
+//                                 try {
+//                                   await orgProvider.createClass(
+//                                     courseId: courseId,
+//                                     teacherId: selectedTeacherId!,
+//                                     className: nameController.text,
+//                                     startDate: DateTime.now(),
+//                                   );
+//                                   if (ctx.mounted) {
+//                                     Navigator.pop(ctx);
+//                                     ScaffoldMessenger.of(context).showSnackBar(
+//                                       const SnackBar(
+//                                         content: Text("Class Created!"),
+//                                       ),
+//                                     );
+//                                   }
+//                                 } catch (e) {
+//                                   if (ctx.mounted) {
+//                                     setState(() => isCreating = false);
+//                                     ScaffoldMessenger.of(context).showSnackBar(
+//                                       SnackBar(content: Text("Error: $e")),
+//                                     );
+//                                   }
+//                                 }
+//                               } else {
+//                                 ScaffoldMessenger.of(context).showSnackBar(
+//                                   const SnackBar(
+//                                     content: Text("Please fill all fields"),
+//                                   ),
+//                                 );
+//                               }
+//                             },
+//                       child: isCreating
+//                           ? const SizedBox(
+//                               width: 20,
+//                               height: 20,
+//                               child: CircularProgressIndicator(strokeWidth: 2),
+//                             )
+//                           : const Text("Create"),
+//                     ),
+//                   ],
+//                 );
+//               },
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+// }
 
 class ClassInteriorDashboard extends StatefulWidget {
   final String classId;
