@@ -23,6 +23,7 @@ class NotificationProvider extends ChangeNotifier {
 
   void _listenToInvitations(String email) {
     _invitationSub?.cancel();
+    print("print email: $email from _listenToInvitations");
 
     _invitationSub = _db
         .collectionGroup('invitations')

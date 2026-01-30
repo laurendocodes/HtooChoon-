@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Notificaton/announcements_widget.dart';
-import 'package:htoochoon_flutter/Notificaton/invitations.dart';
 
 import 'package:flutter/material.dart';
+import 'package:htoochoon_flutter/Notificaton/invitations_tab.dart';
 import 'package:htoochoon_flutter/Providers/notificaton_provider.dart';
 import 'package:provider/provider.dart';
 

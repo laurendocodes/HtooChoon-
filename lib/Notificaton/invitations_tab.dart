@@ -10,7 +10,7 @@ class InvitationsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<NotificationProvider>(
-      builder: (context, provider, _) {
+      builder: (context, provider, child) {
         if (provider.invitations.isEmpty) {
           return const Center(child: Text("No pending invitations"));
         }
