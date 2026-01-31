@@ -18,6 +18,7 @@ class InvitationsTab extends StatelessWidget {
         return ListView.builder(
           itemCount: provider.invitations.length,
           itemBuilder: (context, index) {
+            print(provider.invitations.length);
             return InvitationTile(invite: provider.invitations[index]);
           },
         );

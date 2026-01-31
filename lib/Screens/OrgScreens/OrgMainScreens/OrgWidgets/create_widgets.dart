@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
+import 'package:htoochoon_flutter/Screens/LMS/class_detail_screen.dart';
+import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/org_core_home.dart';
 import 'package:intl/intl.dart'; // Add this to pubspec.yaml for date formatting
 import 'package:provider/provider.dart';
 
@@ -471,10 +473,7 @@ class _CreateCourseFormState extends State<CreateCourseForm> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// 3. COURSE DETAIL SCREEN (List Classes + Create Class Form)
-// -----------------------------------------------------------------------------
-
+/// Course Detail Screen
 class CourseDetailScreen extends StatelessWidget {
   final String courseId;
   final String courseTitle;
@@ -565,7 +564,7 @@ class CourseDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Teacher ID: ${cls['teacherId']}", // Better to fetch name async or store name
+                        "Teacher ID: ${cls['teacherId']}",
                         style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
                       const SizedBox(height: 12),
@@ -573,7 +572,15 @@ class CourseDetailScreen extends StatelessWidget {
                         width: double.infinity,
                         child: OutlinedButton(
                           onPressed: () {
-                            // Navigate to Class Interior
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ClassInteriorDashboard(
+                                  classId: cls['courseId'],
+                                  className: cls['name'],
+                                ),
+                              ),
+                            );
                           },
                           child: const Text("Manage Class"),
                         ),

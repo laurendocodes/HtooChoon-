@@ -6,6 +6,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class NotificationProvider extends ChangeNotifier {
   late TabController tabController;
+  bool isDisposed = false;
+
+  void safeChangeNotifier() {
+    if (!isDisposed) {
+      notifyListeners();
+    }
+  }
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -34,6 +41,7 @@ class NotificationProvider extends ChangeNotifier {
           invitations = snapshot.docs;
           notifyListeners();
         });
+    safeChangeNotifier();
   }
 
   Future<void> fetchAnnouncements() async {
