@@ -464,10 +464,9 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
     );
   }
 
-  // --- Dialog Examples for Interactions ---
-  // enum MemberRole {teacher, student, moderator }
   void _showInviteDialog(BuildContext context, OrgProvider provider) {
     final emailController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -494,7 +493,7 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
                             'You have been invited to join our organization as a teacher.',
                       );
 
-                      Navigator.pop(context);
+                      Navigator.pop(ctx);
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Invitation Sent!")),
@@ -528,6 +527,7 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
       ),
     );
   }
+
   //
   // void _showProgramCreateDialog(
   //   BuildContext context,
