@@ -28,7 +28,7 @@ class _OrgContextLoaderState extends State<OrgContextLoader> {
         if (orgProvider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
-
+        //TODO add animation
         if (orgProvider.currentOrgId != null) {
           return MainDashboardWrapper(currentOrgID: orgProvider.currentOrgId);
         }
