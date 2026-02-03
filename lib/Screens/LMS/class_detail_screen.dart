@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Screens/LMS/assignment_list_screen.dart';
 import 'package:htoochoon_flutter/Screens/LMS/live_session_list_screen.dart';
-import 'package:htoochoon_flutter/Screens/LMS/progress_screen.dart';
+// import 'package:htoochoon_flutter/Screens/LMS/progress_screen.dart'; // Unused in snippet, keep if needed
 
 class ClassDetailScreen extends StatelessWidget {
   final String classId;
@@ -36,13 +36,17 @@ class ClassDetailScreen extends StatelessWidget {
           children: [
             _buildOverviewTab(context),
             AssignmentListScreen(classId: classId),
-            LiveSessionListScreen(classId: classId), // Placeholder for Live Sessions
+            LiveSessionListScreen(classId: classId),
             _buildPeopleTab(context),
           ],
         ),
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // OVERVIEW TAB
+  // ---------------------------------------------------------------------------
 
   Widget _buildOverviewTab(BuildContext context) {
     return SingleChildScrollView(
@@ -57,7 +61,6 @@ class ClassDetailScreen extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          // Placeholder for recent activity feed
           const Center(child: Text("No recent activity")),
         ],
       ),
@@ -67,10 +70,14 @@ class ClassDetailScreen extends StatelessWidget {
   Widget _buildWelcomeCard(BuildContext context) {
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: Theme.of(
+        context,
+      ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+        side: BorderSide(
+          color: Theme.of(context).dividerColor.withOpacity(0.1),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -92,17 +99,192 @@ class ClassDetailScreen extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // PEOPLE TAB (Google Classroom Style)
+  // ---------------------------------------------------------------------------
+
   Widget _buildPeopleTab(BuildContext context) {
-    // Placeholder for People list (Teachers/Students)
-    return Center(
+    // TODO: Replace these dummy lists with data from your Provider
+    // final orgProvider = Provider.of<OrgProvider>(context);
+    // final teachers = orgProvider.getTeachers(classId);
+
+    final List<String> teachers = ["Mr. Anderson"];
+    final List<String> students = [
+      "Alice Johnson",
+      "Bob Smith",
+      "Charlie Brown",
+      "Diana Prince",
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.people_outline, size: 48, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text("Class Roster"),
+          // --- Teachers Section ---
+          _buildSectionHeader(context, "Teachers"),
+          ...teachers.map(
+            (name) => _buildPersonTile(context, name, isTeacher: true),
+          ),
+
+          const SizedBox(height: 32),
+
+          // --- Students Section ---
+          _buildSectionHeader(
+            context,
+            "Students",
+            // The Invite Button
+            trailing: IconButton(
+              icon: Icon(
+                Icons.person_add_alt_1,
+                color: Theme.of(context).primaryColor,
+              ),
+              onPressed: () => _showInviteDialog(context),
+            ),
+          ),
+
+          // Student Count
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 8),
+            child: Text(
+              "${students.length} students",
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ),
+
+          // Student List
+          ...students.map((name) => _buildPersonTile(context, name)),
         ],
       ),
+    );
+  }
+
+  // Helper widget for the headers (Teachers/Students)
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title, {
+    Widget? trailing,
+  }) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 24,
+                color: Theme.of(context).primaryColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (trailing != null) trailing,
+          ],
+        ),
+        const SizedBox(height: 4),
+        Divider(color: Theme.of(context).primaryColor, thickness: 1),
+      ],
+    );
+  }
+
+  // Helper widget for the list rows (Avatar + Name)
+  Widget _buildPersonTile(
+    BuildContext context,
+    String name, {
+    bool isTeacher = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: isTeacher
+                ? Theme.of(context).primaryColor.withOpacity(0.1)
+                : Colors.grey.shade200,
+            radius: 20,
+            child: Text(
+              name[0].toUpperCase(), // First letter of name
+              style: TextStyle(
+                color: isTeacher
+                    ? Theme.of(context).primaryColor
+                    : Colors.black87,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+          ),
+          // Optional: Add an ellipsis menu for actions like "Remove student" or "Email"
+          if (!isTeacher)
+            IconButton(
+              icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+              onPressed: () {
+                // Handle student options (email, remove, etc.)
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Logic to show the Invite Popup
+  void _showInviteDialog(BuildContext context) {
+    final TextEditingController emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Invite students"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Enter the email address of the student you want to invite.",
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: "Email address",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (emailController.text.isNotEmpty) {
+                  // TODO: Call your Provider API to send the invite
+                  // Provider.of<OrgProvider>(context, listen: false).inviteStudent(emailController.text);
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Invitation sent to ${emailController.text}",
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: const Text("Invite"),
+            ),
+          ],
+        );
+      },
     );
   }
 }
