@@ -5,6 +5,7 @@ import 'package:htoochoon_flutter/Providers/login_provider.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Providers/theme_provider.dart';
 import 'package:htoochoon_flutter/Screens/LMS/class_detail_screen.dart';
+import 'package:htoochoon_flutter/Screens/MainLayout/main_scaffold.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/OrgWidgets/create_widgets.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/invitation_screen.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/org_tabs/members_tab.dart';
@@ -31,74 +32,90 @@ class _MainDashboardWrapperState extends State<MainDashboardWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final orgProvider = context.watch<OrgProvider>();
     bool isExtended = MediaQuery.of(context).size.width > 900;
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return Scaffold(
-      body: Row(
-        children: [
-          Container(
-            width: isExtended ? 250 : 80,
-            color: Theme.of(context).cardColor,
-            child: Column(
-              children: [
-                // 1. App Logo / Header
-                _buildSidebarHeader(isExtended),
+    // 🔥 HANDLE EXIT ORG NAVIGATION HERE
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (orgProvider.lastAction == OrgAction.exited) {
+        orgProvider.clearLastAction();
 
-                // 2. Main Navigation Items
-                Expanded(
-                  child: NavigationRail(
-                    extended: isExtended,
-                    minExtendedWidth: 250,
-                    selectedIndex: _selectedIndex,
-                    backgroundColor: Colors.transparent,
-                    onDestinationSelected: (index) =>
-                        setState(() => _selectedIndex = index),
-                    destinations: const [
-                      NavigationRailDestination(
-                        icon: Icon(Icons.home_outlined),
-                        selectedIcon: Icon(Icons.home),
-                        label: Text('Home'),
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainScaffold()),
+          (route) => false,
+        );
+      }
+    });
+
+    return Stack(
+      children: [
+        Scaffold(
+          body: Row(
+            children: [
+              // ---------- SIDEBAR ----------
+              Container(
+                width: isExtended ? 250 : 80,
+                color: Theme.of(context).cardColor,
+                child: Column(
+                  children: [
+                    _buildSidebarHeader(isExtended),
+
+                    Expanded(
+                      child: NavigationRail(
+                        extended: isExtended,
+                        minExtendedWidth: 250,
+                        selectedIndex: _selectedIndex,
+                        backgroundColor: Colors.transparent,
+                        onDestinationSelected: (index) =>
+                            setState(() => _selectedIndex = index),
+                        destinations: const [
+                          NavigationRailDestination(
+                            icon: Icon(Icons.home_outlined),
+                            selectedIcon: Icon(Icons.home),
+                            label: Text('Home'),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.layers_outlined),
+                            selectedIcon: Icon(Icons.layers),
+                            label: Text('Programs'),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.all_inclusive),
+                            selectedIcon: Icon(Icons.all_inclusive_outlined),
+                            label: Text('Members'),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.person_pin_outlined),
+                            selectedIcon: Icon(Icons.person_pin),
+                            label: Text('Teachers'),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.school_outlined),
+                            selectedIcon: Icon(Icons.school),
+                            label: Text('Students'),
+                          ),
+                        ],
                       ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.layers_outlined),
-                        selectedIcon: Icon(Icons.layers),
-                        label: Text('Programs'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.all_inclusive),
-                        selectedIcon: Icon(Icons.all_inclusive_outlined),
-                        label: Text('Members'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.person_pin_outlined),
-                        selectedIcon: Icon(Icons.person_pin),
-                        label: Text('Teachers'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.school_outlined),
-                        selectedIcon: Icon(Icons.school),
-                        label: Text('Students'),
-                      ),
-                    ],
-                  ),
+                    ),
+
+                    const Divider(height: 1),
+                    _buildSidebarFooter(isExtended, themeProvider),
+                  ],
                 ),
+              ),
+              const VerticalDivider(thickness: 1, width: 1),
 
-                const Divider(height: 1),
-
-                // 3. Footer Section (Profile, Theme, Settings, Logout)
-                _buildSidebarFooter(isExtended, themeProvider),
-              ],
-            ),
+              // ---------- MAIN CONTENT ----------
+              Expanded(
+                child: IndexedStack(index: _selectedIndex, children: _pages),
+              ),
+            ],
           ),
-          const VerticalDivider(thickness: 1, width: 1),
+        ),
 
-          // Main Content
-          Expanded(
-            child: IndexedStack(index: _selectedIndex, children: _pages),
-          ),
-        ],
-      ),
+        const GlobalOrgSwitchOverlay(),
+      ],
     );
   }
 

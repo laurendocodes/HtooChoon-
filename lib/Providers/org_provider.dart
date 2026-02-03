@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+enum OrgAction { none, switched, exited }
+
 enum MemberFilter { all, teacher, student }
 
 class OrgProvider extends ChangeNotifier {
@@ -11,6 +13,8 @@ class OrgProvider extends ChangeNotifier {
   Map<String, dynamic>? _orgData;
   Map<String, dynamic>? get orgData => _orgData;
 
+  OrgAction _lastAction = OrgAction.none;
+  OrgAction get lastAction => _lastAction;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   List<Map<String, dynamic>> _teachers = [];
   List<Map<String, dynamic>> get teachers => _teachers;
@@ -20,8 +24,9 @@ class OrgProvider extends ChangeNotifier {
   String? _currentUserId;
   String? _currentOrgName;
   bool _isLoading = false;
+  bool _orgIsLoading = false;
   bool _isMembersLoading = false;
-
+  bool get orgIsLoading => _orgIsLoading;
   bool get isLoading => _isLoading;
   bool get isMembersLoading => _isMembersLoading;
   String? get currentOrgId => _currentOrgId;
@@ -457,12 +462,18 @@ class OrgProvider extends ChangeNotifier {
     }
   }
 
+  bool _justSwitched = false;
+  bool get justSwitched => _justSwitched;
+
+  /// SWITCH
+
   Future<void> switchOrganization(
     String orgId,
     String name,
     String role,
   ) async {
-    _isLoading = true;
+    _orgIsLoading = true;
+    _justSwitched = false;
     notifyListeners();
 
     _currentOrgId = orgId;
@@ -470,22 +481,50 @@ class OrgProvider extends ChangeNotifier {
     _role = role;
 
     final doc = await _db.collection('organizations').doc(orgId).get();
-
     if (!doc.exists) {
+      _orgIsLoading = false;
+      notifyListeners();
       throw Exception("Organization not found");
     }
 
     _orgData = {'id': doc.id, ...doc.data()!};
 
-    _isLoading = false;
+    _orgIsLoading = false;
+    _justSwitched = true;
     notifyListeners();
   }
 
   Future<void> leaveOrganization() async {
+    if (_isLoading) return;
+
+    _isLoading = true;
+    _lastAction = OrgAction.none;
+    notifyListeners();
+
+    // 🔄 Simulate API / Firestore cleanup
+    await Future.delayed(const Duration(seconds: 2));
+
+    // TODO:
+    // - remove user from org members
+    // - clear org-related caches
+    // - revoke permissions if needed
+
     _currentOrgId = null;
     _currentOrgName = null;
     _role = null;
+    _orgData = null;
+
+    _isLoading = false;
+    _lastAction = OrgAction.exited;
     notifyListeners();
+  }
+
+  void clearLastAction() {
+    _lastAction = OrgAction.none;
+  }
+
+  void clearJustSwitched() {
+    _justSwitched = false;
   }
 
   Future<void> inviteMember(
