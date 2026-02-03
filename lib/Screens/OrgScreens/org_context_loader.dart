@@ -29,14 +29,8 @@ class _OrgContextLoaderState extends State<OrgContextLoader> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // Logic:
-        // 1. If currently inside an org session -> Show OrgDashboard (Hierarchy)
-        // 2. If not inside org session but has orgs -> Show Org Selector / "My Orgs"
-        // 3. If has no orgs -> Show "Create or Join" Empty State
-
         if (orgProvider.currentOrgId != null) {
-          // Entering Org Context -> Show the Org Home wrapper (the one with sidebar)
-          return const MainDashboardWrapper();
+          return MainDashboardWrapper(currentOrgID: orgProvider.currentOrgId);
         }
 
         if (orgProvider.userOrgs.isNotEmpty) {

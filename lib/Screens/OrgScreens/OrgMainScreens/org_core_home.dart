@@ -12,7 +12,8 @@ import 'package:provider/provider.dart';
 import 'OrgWidgets/org_dashboard_widgets.dart';
 
 class MainDashboardWrapper extends StatefulWidget {
-  const MainDashboardWrapper({super.key});
+  String? currentOrgID;
+  MainDashboardWrapper({super.key, required this.currentOrgID});
   @override
   State<MainDashboardWrapper> createState() => _MainDashboardWrapperState();
 }
@@ -102,22 +103,24 @@ class _MainDashboardWrapperState extends State<MainDashboardWrapper> {
   }
 
   Widget _buildSidebarHeader(bool isExtended) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      child: Row(
-        mainAxisAlignment: isExtended
-            ? MainAxisAlignment.start
-            : MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.school, size: 32, color: Colors.teal),
-          if (isExtended) ...[
-            const SizedBox(width: 12),
-            const Text(
-              "Htoo Choon",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
+    return Consumer<OrgProvider>(
+      builder: (context, orgProvider, child) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Row(
+          mainAxisAlignment: isExtended
+              ? MainAxisAlignment.start
+              : MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.school, size: 32, color: Colors.teal),
+            if (isExtended) ...[
+              const SizedBox(width: 12),
+              const Text(
+                "Htoo Choon",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -466,68 +469,138 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
 
   void _showInviteDialog(BuildContext context, OrgProvider provider) {
     final emailController = TextEditingController();
+    List<Map<String, dynamic>> suggestions = [];
+    Map<String, dynamic>? selectedUser;
+    bool isSearching = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Invite Teacher"),
-        content: TextField(
-          controller: emailController,
-          decoration: const InputDecoration(labelText: "Teacher Email"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: provider.isLoading
-                ? null
-                : () async {
-                    try {
-                      await provider.inviteMember(
-                        emailController.text.trim(),
-                        'teacher',
-                        title: 'Invitation to join our LMS',
-                        body:
-                            'You have been invited to join our organization as a teacher.',
-                      );
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          Future<void> onSearch(String value) async {
+            setState(() {
+              isSearching = true;
+              selectedUser = null;
+            });
 
-                      Navigator.pop(ctx);
+            final result = await provider.searchUsersByEmail(value.trim());
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Invitation Sent!")),
-                      );
-                    } catch (e) {
-                      Navigator.pop(ctx);
+            if (ctx.mounted) {
+              setState(() {
+                suggestions = result;
+                isSearching = false;
+              });
+            }
+          }
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            e.toString().contains('not found')
-                                ? 'User with this email does not exist'
-                                : 'Failed to send invitation',
-                          ),
-                        ),
-                      );
-                    }
-                  },
-            child: provider.isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+          return AlertDialog(
+            title: const Text("Invite Teacher"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: emailController,
+                  onChanged: onSearch,
+                  decoration: InputDecoration(
+                    labelText: "Teacher Email",
+                    suffixIcon: isSearching
+                        ? const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                if (suggestions.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 160),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                  )
-                : const Text("Send Invite"),
-          ),
-        ],
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: suggestions.length,
+                      itemBuilder: (_, i) {
+                        final user = suggestions[i];
+                        return ListTile(
+                          title: Text(user['email']),
+                          onTap: () {
+                            setState(() {
+                              selectedUser = user;
+                              emailController.text = user['email'];
+                              suggestions.clear();
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("Cancel"),
+              ),
+
+              ElevatedButton(
+                onPressed: selectedUser == null || provider.isLoading
+                    ? null
+                    : () async {
+                        try {
+                          await provider.inviteMember(
+                            selectedUser!['email'],
+                            'teacher',
+                            title: 'Invitation to join our LMS',
+                            body:
+                                'You have been invited to join our organization as a teacher.',
+                          );
+
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Invitation Sent!")),
+                          );
+                        } catch (e) {
+                          if (!ctx.mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                e.toString().contains('not exist')
+                                    ? 'User does not exist'
+                                    : 'Failed to send invitation',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                child: provider.isLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text("Send Invite"),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
-
   //
   // void _showProgramCreateDialog(
   //   BuildContext context,

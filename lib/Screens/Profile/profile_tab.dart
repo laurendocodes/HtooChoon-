@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Providers/user_provider.dart';
 import 'package:provider/provider.dart';
 
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
+import '../../Providers/user_provider.dart';
+
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
 
@@ -10,9 +18,96 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
+  File? _pickedImage;
+  bool _isUploadingImage = false;
+
+  final ImagePicker _picker = ImagePicker();
+
+  // ------------------ PICK IMAGE ------------------
+  Future<void> _pickProfileImage(UserProvider provider) async {
+    final XFile? file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
+
+    if (file == null) return;
+
+    setState(() {
+      _pickedImage = File(file.path);
+    });
+
+    await _uploadProfileImage(provider);
+  }
+
+  // ------------------ UPLOAD IMAGE ------------------
+  Future<void> _uploadProfileImage(UserProvider provider) async {
+    if (_pickedImage == null) return;
+
+    try {
+      setState(() => _isUploadingImage = true);
+
+      await provider.updateProfilePhoto(_pickedImage!);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Profile photo updated")));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to upload image")));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingImage = false;
+          _pickedImage = null;
+        });
+      }
+    }
+  }
+
+  // ------------------ EDIT NAME ------------------
+  void _showEditNameDialog(
+    BuildContext context,
+    UserProvider provider,
+    Map<String, dynamic> user,
+  ) {
+    final controller = TextEditingController(
+      text: user['name'] ?? user['username'],
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Edit Name"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: "Full Name"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+
+              await provider.updateProfile(name: controller.text.trim());
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ------------------ UI ------------------
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
+    final userProvider = context.watch<UserProvider>();
     final user = userProvider.userData;
 
     if (userProvider.isLoading && user == null) {
@@ -23,68 +118,97 @@ class _ProfileTabState extends State<ProfileTab> {
       return const Center(child: Text("Unable to load profile"));
     }
 
+    final String displayName = user['name'] ?? user['username'] ?? 'User';
+    final String? photoUrl = user['photo'];
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Profile"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // Navigate to settings
-            },
-          )
-        ],
-      ),
+      appBar: AppBar(title: const Text("My Profile")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            // Avatar
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-              backgroundImage: user['photo'] != null ? NetworkImage(user['photo']) : null,
-              child: user['photo'] == null
-                  ? Text(
-                      (user['name'] ?? user['username'] ?? 'U')[0].toString().toUpperCase(),
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                    )
-                  : null,
+            // ------------------ AVATAR ------------------
+            Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  radius: 52,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).primaryColor.withOpacity(0.1),
+                  backgroundImage: _pickedImage != null
+                      ? FileImage(_pickedImage!)
+                      : (photoUrl != null ? NetworkImage(photoUrl) : null)
+                            as ImageProvider?,
+                  child: photoUrl == null && _pickedImage == null
+                      ? Text(
+                          displayName[0].toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+
+                // CAMERA BUTTON
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: InkWell(
+                    onTap: _isUploadingImage
+                        ? null
+                        : () => _pickProfileImage(userProvider),
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      child: _isUploadingImage
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.camera_alt,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+
             const SizedBox(height: 16),
-            
-            // Name
+
+            // ------------------ NAME ------------------
             Text(
-              user['name'] ?? user['username'] ?? 'Unknown User',
+              displayName,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+
             Text(
               user['email'] ?? '',
               style: TextStyle(color: Colors.grey[600]),
             ),
-            
+
             const SizedBox(height: 24),
 
-            // Plan Card
+            // ------------------ PLAN CARD ------------------
             Card(
               elevation: 0,
-              color: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(
-                side: BorderSide(color: Colors.grey.withOpacity(0.2)),
                 borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.withOpacity(0.2)),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.indigo.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.star, color: Colors.indigo),
-                    ),
+                    const Icon(Icons.star, color: Colors.indigo),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
@@ -92,21 +216,22 @@ class _ProfileTabState extends State<ProfileTab> {
                         children: [
                           Text(
                             "Current Plan",
-                            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
                           ),
                           Text(
                             (user['plan'] ?? 'Free').toString().toUpperCase(),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        // Navigate to upgrade screen
-                      },
-                      child: const Text("Upgrade"),
-                    ),
+                    TextButton(onPressed: () {}, child: const Text("Upgrade")),
                   ],
                 ),
               ),
@@ -114,47 +239,19 @@ class _ProfileTabState extends State<ProfileTab> {
 
             const SizedBox(height: 32),
 
-            // Edit Profile Button
+            // ------------------ EDIT NAME ------------------
             SizedBox(
               width: double.infinity,
               height: 50,
               child: OutlinedButton.icon(
-                onPressed: () {
-                  _showEditProfileDialog(context, userProvider, user);
-                },
                 icon: const Icon(Icons.edit),
-                label: const Text("Edit Profile"),
+                label: const Text("Edit Name"),
+                onPressed: () =>
+                    _showEditNameDialog(context, userProvider, user),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showEditProfileDialog(BuildContext context, UserProvider provider, Map<String, dynamic> user) {
-    final nameController = TextEditingController(text: user['name'] ?? user['username']);
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Edit Profile"),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(labelText: "Full Name"),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty) {
-                await provider.updateProfile(name: nameController.text);
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text("Save"),
-          ),
-        ],
       ),
     );
   }

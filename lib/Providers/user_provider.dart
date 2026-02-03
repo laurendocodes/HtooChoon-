@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,7 +27,8 @@ class UserProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      DocumentSnapshot<Map<String, dynamic>> doc = await FirebaseFirestore.instance
+      DocumentSnapshot<Map<String, dynamic>> doc = await FirebaseFirestore
+          .instance
           .collection('users')
           .doc(user.uid)
           .get();
@@ -55,6 +59,39 @@ class UserProvider extends ChangeNotifier {
     await prefs.setString('userName', data['name'] ?? data['username'] ?? '');
   }
 
+  Future<void> updateProfilePhoto(File imageFile) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('users')
+          .child(user.uid)
+          .child('profile.jpg');
+
+      await ref.putFile(imageFile);
+
+      final photoUrl = await ref.getDownloadURL();
+
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {'photoUrl': photoUrl},
+      );
+
+      _userData?['photoUrl'] = photoUrl;
+      await _cacheUserData(_userData!);
+    } catch (e) {
+      debugPrint("Profile photo update failed: $e");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Updates user profile in Firestore and local state
   Future<void> updateProfile({String? name, String? photoUrl}) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -73,7 +110,7 @@ class UserProvider extends ChangeNotifier {
             .collection('users')
             .doc(user.uid)
             .update(updates);
-            
+
         // Update local state
         _userData?.addAll(updates);
         await _cacheUserData(_userData!);

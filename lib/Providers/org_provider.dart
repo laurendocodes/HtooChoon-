@@ -45,7 +45,27 @@ class OrgProvider extends ChangeNotifier {
   }
 
   String get planType => _orgData?['plan']?['planId'] ?? 'none';
+  //Search members by email
+  Future<List<Map<String, dynamic>>> searchUsersByEmail(String query) async {
+    if (query.isEmpty) return [];
 
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isGreaterThanOrEqualTo: query)
+        .where('email', isLessThanOrEqualTo: '$query\uf8ff')
+        .limit(6)
+        .get();
+
+    return snap.docs.map((d) {
+      final data = d.data();
+      return {
+        'uid': d.id,
+        'email': data['email'],
+        'username': data['displayName'] ?? '',
+        'photoUrl': data['photoUrl'],
+      };
+    }).toList();
+  }
   //Filter member
 
   MemberFilter _filter = MemberFilter.all;
