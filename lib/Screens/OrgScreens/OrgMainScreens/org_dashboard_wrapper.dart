@@ -12,13 +12,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
 import 'package:provider/provider.dart';
 
-/// Premium Organization Dashboard Wrapper
-///
-/// Features:
-/// - Responsive sidebar (72px collapsed, 280px extended)
-/// - Smooth page transitions with IndexedStack
-/// - Clean visual hierarchy
-/// - Modern SaaS aesthetics
 class PremiumDashboardWrapper extends StatefulWidget {
   final String? currentOrgID;
 
