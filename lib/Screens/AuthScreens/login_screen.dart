@@ -420,6 +420,8 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
 
                 const SizedBox(height: AppTheme.space2xl),
                 _SubmitButton(
+                  textColorGoogle: Theme.of(context).colorScheme.secondary,
+                  textColor: Theme.of(context).colorScheme.inversePrimary,
                   isSignUp: _isSignUp,
                   isLoading: loginProvider.isLoading,
                   onPressed: () => _handleSubmit(loginProvider),
@@ -636,11 +638,15 @@ class _SubmitButton extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onPressed;
   final VoidCallback onPressedGoogle;
+  final Color? textColor;
+  final Color? textColorGoogle;
   const _SubmitButton({
     required this.isSignUp,
     required this.isLoading,
     required this.onPressed,
     required this.onPressedGoogle,
+    required this.textColor,
+    required this.textColorGoogle,
   });
 
   @override
@@ -656,7 +662,7 @@ class _SubmitButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd),
             ),
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     height: 24,
                     width: 24,
                     child: CircularProgressIndicator(
@@ -666,10 +672,11 @@ class _SubmitButton extends StatelessWidget {
                   )
                 : Text(
                     isSignUp ? 'Create Account' : 'Login',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.1,
+                      color: textColor,
                     ),
                   ),
           ),
@@ -699,10 +706,10 @@ class _SubmitButton extends StatelessWidget {
             icon: Image.asset('assets/images/logos/google.png', height: 22),
             label: Text(
               isSignUp ? 'Sign up with Google' : 'Sign in with Google',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF111827),
+                color: textColorGoogle,
               ),
             ),
             style: OutlinedButton.styleFrom(
