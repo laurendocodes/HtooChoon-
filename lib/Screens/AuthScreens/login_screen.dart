@@ -3,278 +3,6 @@ import 'package:htoochoon_flutter/Providers/login_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<LoginProvider>(
-      builder: (context, loginProvider, child) => Scaffold(
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 900) {
-              // WEBDESKTOP VIEW (Split Screen)
-              return Row(
-                children: [
-                  const Expanded(flex: 5, child: AuthFormLeft()),
-                  Expanded(flex: 5, child: RightSideVisual()),
-                ],
-              );
-            } else {
-              // MOBILE VIEW (Single Column)
-              return const Center(child: AuthFormLeft());
-            }
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class AuthFormLeft extends StatefulWidget {
-  const AuthFormLeft({super.key});
-
-  @override
-  State<AuthFormLeft> createState() => _AuthFormLeftState();
-}
-
-class _AuthFormLeftState extends State<AuthFormLeft> {
-  bool isSignUp = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
-
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  final _usernameController = TextEditingController();
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _usernameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<LoginProvider>(
-      builder: (context, loginProvider, child) => SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LogoWidget(),
-              const SizedBox(height: 48),
-
-              /// TITLE
-              Text(
-                isSignUp ? 'Create Account' : 'Welcome Back',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF111827),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              Text(
-                isSignUp
-                    ? 'Sign up to start your learning journey'
-                    : 'Login to continue your progress',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF6B7280),
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              /// LOGIN / SIGN UP TOGGLE
-              Center(
-                child: LoginToggleSwitch(
-                  isLogin: !isSignUp,
-                  onChanged: (val) {
-                    setState(() {
-                      isSignUp = !val;
-                      _formKey.currentState?.reset();
-                    });
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              /// USERNAME (SIGN UP ONLY)
-              if (isSignUp) ...[
-                TextFormField(
-                  controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Username',
-                    hintText: 'Choose a unique username',
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a username';
-                    }
-                    if (value.length < 3) {
-                      return 'Username must be at least 3 characters';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-              ],
-
-              /// EMAIL
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'Enter your email address',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!RegExp(
-                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                  ).hasMatch(value)) {
-                    return 'Please enter a valid email address';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              /// PASSWORD
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  hintText: 'Enter your password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
-                  return null;
-                },
-              ),
-
-              /// CONFIRM PASSWORD (SIGN UP ONLY)
-              if (isSignUp) ...[
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    hintText: 'Repeat your password',
-                    prefixIcon: const Icon(Icons.lock_reset_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
-                ),
-              ],
-
-              /// SUBMIT BUTTON
-              Padding(
-                padding: const EdgeInsets.only(top: 30),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: loginProvider.isLoading
-                        ? null
-                        : () {
-                            if (_formKey.currentState!.validate()) {
-                              if (isSignUp) {
-                                loginProvider.registerUser(
-                                  context,
-                                  _emailController.text,
-                                  _passwordController.text,
-                                  _usernameController.text,
-                                );
-                              } else {
-                                loginProvider.loginWithEmail(
-                                  context,
-                                  _emailController.text,
-                                  _passwordController.text,
-                                );
-                              }
-                            }
-                          },
-                    child: loginProvider.isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            isSignUp ? 'Create Account' : 'Login',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // RIGHT SIDE: Education Theme
 
 class RightSideVisual extends StatelessWidget {
@@ -471,12 +199,6 @@ class SocialButton extends StatelessWidget {
   }
 }
 
-/// Premium Login Screen
-/// Design principles:
-/// - Soft, calm aesthetic
-/// - Clear visual hierarchy
-/// - Generous spacing
-/// - Professional appearance
 class PremiumLoginScreen extends StatelessWidget {
   const PremiumLoginScreen({super.key});
 
@@ -697,12 +419,13 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
                 ],
 
                 const SizedBox(height: AppTheme.space2xl),
-
-                // Submit Button
                 _SubmitButton(
                   isSignUp: _isSignUp,
                   isLoading: loginProvider.isLoading,
                   onPressed: () => _handleSubmit(loginProvider),
+                  onPressedGoogle: loginProvider.isLoading
+                      ? () {}
+                      : () => loginProvider.signInWithGoogle(context),
                 ),
 
                 const SizedBox(height: AppTheme.spaceLg),
@@ -912,40 +635,86 @@ class _SubmitButton extends StatelessWidget {
   final bool isSignUp;
   final bool isLoading;
   final VoidCallback onPressed;
-
+  final VoidCallback onPressedGoogle;
   const _SubmitButton({
     required this.isSignUp,
     required this.isLoading,
     required this.onPressed,
+    required this.onPressedGoogle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd),
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: isLoading ? null : onPressed,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd),
+            ),
+            child: isLoading
+                ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    isSignUp ? 'Create Account' : 'Login',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+          ),
         ),
-        child: isLoading
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Text(
-                isSignUp ? 'Create Account' : 'Login',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.1,
-                ),
+        const SizedBox(height: 24),
+
+        Row(
+          children: const [
+            Expanded(child: Divider()),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                'or continue with',
+                style: TextStyle(color: Color(0xFF6B7280)),
               ),
-      ),
+            ),
+            Expanded(child: Divider()),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: OutlinedButton.icon(
+            icon: Image.asset('assets/images/logos/google.png', height: 22),
+            label: Text(
+              isSignUp ? 'Sign up with Google' : 'Sign in with Google',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF111827),
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFE5E7EB)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: onPressedGoogle,
+          ),
+        ),
+      ],
     );
   }
 }

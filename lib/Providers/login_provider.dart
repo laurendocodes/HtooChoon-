@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:htoochoon_flutter/Screens/AuthScreens/login_screen.dart';
 import 'package:htoochoon_flutter/Screens/MainLayout/main_scaffold.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class LoginProvider extends ChangeNotifier {
   bool isDisposed = false;
@@ -22,6 +23,122 @@ class LoginProvider extends ChangeNotifier {
   void dispose() {
     isDisposed = true;
     super.dispose();
+  }
+
+  /// Google sign in
+  Future<void> signInWithGoogle(BuildContext context) async {
+    try {
+      isLoading = true;
+      safeChangeNotifier();
+
+      UserCredential userCredential;
+
+      if (kIsWeb) {
+        // WEB
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        userCredential = await FirebaseAuth.instance.signInWithPopup(
+          googleProvider,
+        );
+      } else {
+        // MOBILE
+        final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+        final GoogleSignInAccount? googleUser = await googleSignIn
+            .authenticate();
+
+        if (googleUser == null) {
+          isLoading = false;
+          safeChangeNotifier();
+          return;
+        }
+
+        final googleAuth = await googleUser.authentication;
+
+        final credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+        );
+
+        userCredential = await FirebaseAuth.instance.signInWithCredential(
+          credential,
+        );
+      }
+
+      final user = userCredential.user;
+      if (user == null) throw Exception("Google sign-in failed");
+
+      //Create Firestore user doc if new user
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        await _createUserDocument(user, user.displayName ?? 'Google User');
+      }
+
+      await _handleAuthSuccess(context, user);
+    } catch (e) {
+      _handleAuthError(context, e);
+    }
+  }
+
+  /// Forgot password
+  Future<void> sendEmailOtp(String email) async {
+    try {
+      isLoading = true;
+      safeChangeNotifier();
+
+      final otp = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000))
+          .toString();
+
+      await FirebaseFirestore.instance
+          .collection('password_otps')
+          .doc(email)
+          .set({'otp': otp, 'createdAt': FieldValue.serverTimestamp()});
+
+      // TODO: send email using EmailJS / Firebase Functions / backend
+      debugPrint("OTP sent to $email → $otp");
+
+      isLoading = false;
+      safeChangeNotifier();
+    } catch (e) {
+      isLoading = false;
+      safeChangeNotifier();
+      throw Exception("Failed to send OTP");
+    }
+  }
+
+  ///OTP
+  Future<bool> verifyEmailOtp(String email, String enteredOtp) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('password_otps')
+          .doc(email)
+          .get();
+
+      if (!doc.exists) return false;
+
+      final storedOtp = doc['otp'];
+      if (storedOtp != enteredOtp) return false;
+
+      // OTP valid → delete
+      await FirebaseFirestore.instance
+          .collection('password_otps')
+          .doc(email)
+          .delete();
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Reset password
+  Future<void> resetPasswordAfterOtp(String email) async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      throw Exception("Failed to reset password");
+    }
   }
 
   Future<void> updateUserType(String userId, String userType) async {

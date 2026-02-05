@@ -185,77 +185,6 @@ class OrgProvider extends ChangeNotifier {
     });
   }
 
-  // Future<void> createOrganization(
-  //   String name,
-  //   String plan,
-  //   String planStatus,
-  //   bool verify,
-  // ) async {
-  //   final user = FirebaseAuth.instance.currentUser;
-  //   if (user == null) return;
-  //
-  //   try {
-  //     _isLoading = true;
-  //     notifyListeners();
-  //
-  //     DocumentReference orgRef = await _db.collection('organizations').add({
-  //       'name': name,
-  //       'verify': verify,
-  //       'ownerId': user.uid,
-  //       'planType': plan, // 'free', 'plus', 'super'
-  //       'planStatus': planStatus, // 'active', 'due', 'cancelled'
-  //       'createdAt': FieldValue.serverTimestamp(),
-  //       'isActive': true,
-  //     });
-  //
-  //     // Add user as OWNER member of this org
-  //     await orgRef.collection('members').doc(user.uid).set({
-  //       'uid': user.uid,
-  //       'role': 'owner', // Creator is owner
-  //       'email': user.email,
-  //       'joinedAt': FieldValue.serverTimestamp(),
-  //     });
-  //
-  //     // Switch to this new org context immediately
-  //     await switchOrganization(orgRef.id, name, 'owner');
-  //
-  //     // Refresh org list
-  //     await fetchUserOrgs();
-  //
-  //     _isLoading = false;
-  //     notifyListeners();
-  //   } catch (e) {
-  //     _isLoading = false;
-  //     notifyListeners();
-  //     rethrow;
-  //   }
-  // }
-
-  // --- 1. Program Management ---
-  // Future<void> createProgram(String name, String description) async {
-  //   if (_currentOrgId == null) return;
-  //   try {
-  //     _isLoading = true;
-  //     notifyListeners();
-  //     await _db
-  //         .collection('organizations')
-  //         .doc(_currentOrgId)
-  //         .collection('programs')
-  //         .add({
-  //           'name': name,
-  //           'description': description,
-  //           'createdAt': FieldValue.serverTimestamp(),
-  //         });
-  //     print("created program  $name");
-  //     _isLoading = false;
-  //     notifyListeners();
-  //   } catch (e) {
-  //     _isLoading = false;
-  //     notifyListeners();
-  //     rethrow;
-  //   }
-  // }
-
   Future<void> createProgram(String name, String description) async {
     _requireActivePlan();
 
@@ -273,32 +202,6 @@ class OrgProvider extends ChangeNotifier {
         });
   }
 
-  // Future<void> createCourse(
-  //   String title,
-  //
-  //   String? programId,
-  //   String syllabus, {
-  //   List<String>? categories,
-  // }) async {
-  //   if (_currentOrgId == null) return;
-  //
-  //   try {
-  //     await _db
-  //         .collection('organizations')
-  //         .doc(_currentOrgId)
-  //         .collection('courses')
-  //         .add({
-  //           'title': title,
-  //           'programId': programId,
-  //           'syllabus': syllabus,
-  //           'categories': categories ?? [],
-  //           'status': 'DRAFT',
-  //           'createdAt': FieldValue.serverTimestamp(),
-  //         });
-  //   } catch (e) {
-  //     rethrow;
-  //   }
-  // }
   void _requireActivePlan() {
     final plan = _orgData?['plan'];
 
@@ -608,17 +511,7 @@ class OrgProvider extends ChangeNotifier {
         .snapshots();
   }
 
-  Future<void> cancelInvitation({required String inviteId}) async {
-    if (_currentOrgId == null) return;
-
-    await _db
-        .collection('organizations')
-        .doc(_currentOrgId)
-        .collection('invitations')
-        .doc(inviteId)
-        .delete();
-  }
-
+  ///Invitations User
   Stream<QuerySnapshot> fetchMyInvitations(String email) {
     return _db
         .collectionGroup('invitations')
@@ -717,21 +610,307 @@ class OrgProvider extends ChangeNotifier {
 
   // --- 5. People (Teachers/Students) ---
 
-  // Invite Student
-  Future<void> inviteStudent(String email, String? classId) async {
+  ///Invitation Org
+
+  Future<void> inviteStudent({
+    String? email,
+    required List<String> courseIds,
+    String? classId,
+    required String title,
+    required String body,
+  }) async {
     if (_currentOrgId == null) return;
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // 1. Check if user exists
+      final userQuery = await _db
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isEmpty) {
+        throw Exception("User with this email does not exist");
+      }
+
+      // 2. Prevent duplicate pending invite
+      final existingInvite = await _db
+          .collection('organizations')
+          .doc(_currentOrgId)
+          .collection('invitations')
+          .where('email', isEqualTo: email)
+          .where('role', isEqualTo: 'student')
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+
+      if (existingInvite.docs.isNotEmpty) {
+        throw Exception("Student invitation already pending");
+      }
+
+      // 3. Create invitation with student-specific fields
+      await _db
+          .collection('organizations')
+          .doc(_currentOrgId)
+          .collection('invitations')
+          .add({
+            'orgId': _currentOrgId,
+            'email': email,
+            'role': 'student',
+            'title': title,
+            'body': body,
+            'status': 'pending',
+            'invitedBy': _currentUserId,
+            'createdAt': FieldValue.serverTimestamp(),
+            'respondedAt': null,
+
+            // Student-specific fields
+            'courseIds': courseIds, // Courses student will have access to
+            'classId': classId, // Optional specific class assignment
+            'enrollmentType': classId != null ? 'class' : 'course',
+          });
+
+      _isLoading = false;
+      safeChangeNotifier();
+    } catch (e) {
+      _isLoading = false;
+      safeChangeNotifier();
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchPendingInvitations() async {
+    if (_currentOrgId == null) return [];
+
+    try {
+      final snapshot = await _db
+          .collection('organizations')
+          .doc(_currentOrgId)
+          .collection('invitations')
+          .where('status', isEqualTo: 'pending')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> cancelInvitation({required String inviteId}) async {
+    if (_currentOrgId == null) return;
+
     await _db
         .collection('organizations')
         .doc(_currentOrgId)
-        .collection('invites')
-        .add({
+        .collection('invitations')
+        .doc(inviteId)
+        .delete();
+  }
+
+  Future<void> respondToInvitation(String invitationId, bool accepted) async {
+    if (_currentOrgId == null) return;
+
+    try {
+      final inviteRef = _db
+          .collection('organizations')
+          .doc(_currentOrgId)
+          .collection('invitations')
+          .doc(invitationId);
+
+      final inviteDoc = await inviteRef.get();
+      if (!inviteDoc.exists) {
+        throw Exception("Invitation not found");
+      }
+
+      final inviteData = inviteDoc.data()!;
+      final role = inviteData['role'];
+      final email = inviteData['email'];
+
+      // Update invitation status
+      await inviteRef.update({
+        'status': accepted ? 'accepted' : 'declined',
+        'respondedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (accepted) {
+        // Get user ID
+        final userQuery = await _db
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .limit(1)
+            .get();
+
+        if (userQuery.docs.isEmpty) return;
+
+        final userId = userQuery.docs.first.id;
+
+        if (role == 'student') {
+          // Handle student acceptance with course enrollment
+          await _addStudentToOrg(
+            userId: userId,
+            email: email,
+            courseIds: List<String>.from(inviteData['courseIds'] ?? []),
+            classId: inviteData['classId'],
+          );
+        } else {
+          // Handle teacher/other role acceptance
+          await _addMemberToOrg(userId: userId, email: email, role: role);
+        }
+      }
+
+      safeChangeNotifier();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Private helper: Add student to organization with course enrollments
+  Future<void> _addStudentToOrg({
+    required String userId,
+    required String email,
+    required List<String> courseIds,
+    String? classId,
+  }) async {
+    if (_currentOrgId == null) return;
+
+    final batch = _db.batch();
+
+    // 1. Add to organization's students subcollection
+    final studentRef = _db
+        .collection('organizations')
+        .doc(_currentOrgId)
+        .collection('students')
+        .doc(userId);
+
+    batch.set(studentRef, {
+      'userId': userId,
+      'email': email,
+      'role': 'student',
+      'status': 'active',
+      'joinedAt': FieldValue.serverTimestamp(),
+      'courseIds': courseIds,
+      'classId': classId,
+    });
+
+    // 2. Create course enrollments
+    for (final courseId in courseIds) {
+      final enrollmentRef = _db
+          .collection('organizations')
+          .doc(_currentOrgId)
+          .collection('courses')
+          .doc(courseId)
+          .collection('enrollments')
+          .doc(userId);
+
+      batch.set(enrollmentRef, {
+        'userId': userId,
+        'email': email,
+        'enrolledAt': FieldValue.serverTimestamp(),
+        'status': 'active',
+      });
+    }
+
+    // 3. Add to class roster if specific class assigned
+    if (classId != null) {
+      final classStudentRef = _db
+          .collection('organizations')
+          .doc(_currentOrgId)
+          .collection('classes')
+          .doc(classId)
+          .collection('students')
+          .doc(userId);
+
+      batch.set(classStudentRef, {
+        'userId': userId,
+        'email': email,
+        'joinedAt': FieldValue.serverTimestamp(),
+        'status': 'active',
+      });
+    }
+
+    // 4. Add organization to user's organizations
+    final userOrgRef = _db
+        .collection('users')
+        .doc(userId)
+        .collection('organizations')
+        .doc(_currentOrgId);
+
+    batch.set(userOrgRef, {
+      'organizationId': _currentOrgId,
+      'organizationName': _currentOrgName,
+      'role': 'student',
+      'joinedAt': FieldValue.serverTimestamp(),
+      'courseIds': courseIds,
+      'classId': classId,
+    });
+
+    await batch.commit();
+  }
+
+  /// Private helper: Add teacher/other member to organization
+  /// (Keep your existing logic here)
+  Future<void> _addMemberToOrg({
+    required String userId,
+    required String email,
+    required String role,
+  }) async {
+    if (_currentOrgId == null) return;
+
+    // Add to appropriate subcollection based on role
+    final collectionName = role == 'teacher' ? 'teachers' : 'members';
+
+    await _db
+        .collection('organizations')
+        .doc(_currentOrgId)
+        .collection(collectionName)
+        .doc(userId)
+        .set({
+          'userId': userId,
           'email': email,
-          'role': 'student',
-          'targetClassId': classId, // Optional: Invite directly to a class
-          'status': 'pending',
+          'role': role,
+          'status': 'active',
+          'joinedAt': FieldValue.serverTimestamp(),
+        });
+
+    // Add organization to user's organizations
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('organizations')
+        .doc(_currentOrgId)
+        .set({
+          'organizationId': _currentOrgId,
+          'organizationName': _currentOrgName,
+          'role': role,
+          'joinedAt': FieldValue.serverTimestamp(),
         });
   }
 
+  /// Cancel/Delete a pending invitation
+  // Future<void> cancelInvitation(String invitationId) async {
+  //   if (_currentOrgId == null) return;
+  //
+  //   try {
+  //     await _db
+  //         .collection('organizations')
+  //         .doc(_currentOrgId)
+  //         .collection('invitations')
+  //         .doc(invitationId)
+  //         .delete();
+  //
+  //     safeChangeNotifier();
+  //   } catch (e) {
+  //     rethrow;
+  //   }
+  // }
   // Invite Teacher (Request to work)
   Future<void> inviteTeacher(String email) async {
     if (_currentOrgId == null) return;

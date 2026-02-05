@@ -171,7 +171,7 @@ class _PremiumOrgDashboardScreenState extends State<PremiumOrgDashboardScreen> {
                   gradient: const LinearGradient(
                     colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
                   ),
-                  onTap: () {},
+                  onTap: () => showInviteStudentDialog(context, orgProvider),
                 ),
               ]),
             ),
@@ -251,6 +251,403 @@ class _PremiumOrgDashboardScreenState extends State<PremiumOrgDashboardScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const InvitationsScreen()),
+    );
+  }
+
+  /// Show dialog to invite a student to the organization
+  /// Students need to be assigned to specific courses/classes
+  void showInviteStudentDialog(BuildContext context, OrgProvider provider) {
+    final emailController = TextEditingController();
+    List<Map<String, dynamic>> suggestions = [];
+    Map<String, dynamic>? selectedUser;
+    bool isSearching = false;
+
+    // Student-specific fields
+    String? selectedCourseId;
+    String? selectedClassId;
+    List<String> selectedCourseIds = []; // For bulk course assignment
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          Future<void> onSearch(String value) async {
+            setState(() {
+              isSearching = true;
+              selectedUser = null;
+            });
+
+            final result = await provider.searchUsersByEmail(value.trim());
+
+            if (ctx.mounted) {
+              setState(() {
+                suggestions = result;
+                isSearching = false;
+              });
+            }
+          }
+
+          return AlertDialog(
+            title: const Text('Invite Student'),
+            content: SizedBox(
+              width: 500,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Email Search
+                    TextField(
+                      controller: emailController,
+                      onChanged: onSearch,
+                      decoration: InputDecoration(
+                        labelText: 'Student Email',
+                        hintText: 'search@example.com',
+                        suffixIcon: isSearching
+                            ? const Padding(
+                                padding: EdgeInsets.all(AppTheme.spaceSm),
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : const Icon(Icons.search, size: 20),
+                      ),
+                    ),
+
+                    // Search Results
+                    if (suggestions.isNotEmpty) ...[
+                      const SizedBox(height: AppTheme.spaceMd),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 200),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppTheme.getBorder(context),
+                          ),
+                          borderRadius: AppTheme.borderRadiusMd,
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: suggestions.length,
+                          separatorBuilder: (_, __) => Divider(
+                            height: 1,
+                            color: AppTheme.getBorder(context),
+                          ),
+                          itemBuilder: (_, i) {
+                            final user = suggestions[i];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.1),
+                                child: Text(
+                                  user['email'][0].toUpperCase(),
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              title: Text(user['email']),
+                              subtitle: Text(
+                                user['name'] ?? user['username'] ?? '',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  selectedUser = user;
+                                  emailController.text = user['email'];
+                                  suggestions.clear();
+                                });
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+
+                    // Only show course/class selection if user is selected
+                    if (selectedUser != null) ...[
+                      const SizedBox(height: AppTheme.spaceLg),
+
+                      // Divider with text
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Divider(color: AppTheme.getBorder(context)),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppTheme.spaceSm,
+                            ),
+                            child: Text(
+                              'ENROLLMENT OPTIONS',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: AppTheme.getTextTertiary(context),
+                                    letterSpacing: 1.2,
+                                  ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(color: AppTheme.getBorder(context)),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: AppTheme.spaceLg),
+
+                      // Course Selection
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('organizations')
+                            .doc(provider.currentOrgId)
+                            .collection('courses')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const LinearProgressIndicator();
+                          }
+
+                          final courses = snapshot.data!.docs;
+
+                          if (courses.isEmpty) {
+                            return Container(
+                              padding: const EdgeInsets.all(AppTheme.spaceMd),
+                              decoration: BoxDecoration(
+                                color: AppTheme.warning.withOpacity(0.1),
+                                borderRadius: AppTheme.borderRadiusMd,
+                                border: Border.all(
+                                  color: AppTheme.warning.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    size: 20,
+                                    color: AppTheme.warning,
+                                  ),
+                                  const SizedBox(width: AppTheme.spaceSm),
+                                  Expanded(
+                                    child: Text(
+                                      'No courses available. Create courses first.',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(color: AppTheme.warning),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Select Courses (Optional)',
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: AppTheme.spaceXs),
+                              Text(
+                                'Student will have access to selected courses',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: AppTheme.getTextSecondary(context),
+                                    ),
+                              ),
+                              const SizedBox(height: AppTheme.spaceSm),
+                              Container(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 200,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AppTheme.getBorder(context),
+                                  ),
+                                  borderRadius: AppTheme.borderRadiusMd,
+                                ),
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: courses.length,
+                                  itemBuilder: (_, index) {
+                                    final course = courses[index];
+                                    final courseId = course.id;
+                                    final isSelected = selectedCourseIds
+                                        .contains(courseId);
+
+                                    return CheckboxListTile(
+                                      value: isSelected,
+                                      onChanged: (checked) {
+                                        setState(() {
+                                          if (checked == true) {
+                                            selectedCourseIds.add(courseId);
+                                          } else {
+                                            selectedCourseIds.remove(courseId);
+                                          }
+                                        });
+                                      },
+                                      title: Text(
+                                        course['title'] ?? 'Untitled Course',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium,
+                                      ),
+                                      subtitle: Text(
+                                        course['description'] ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: AppTheme.getTextSecondary(
+                                                context,
+                                              ),
+                                            ),
+                                      ),
+                                      controlAffinity:
+                                          ListTileControlAffinity.leading,
+                                      dense: true,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: AppTheme.spaceLg),
+
+                      // Optional: Specific Class Selection
+                      if (selectedCourseIds.length == 1) ...[
+                        StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('organizations')
+                              .doc(provider.currentOrgId)
+                              .collection('classes')
+                              .where(
+                                'courseId',
+                                isEqualTo: selectedCourseIds.first,
+                              )
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final classes = snapshot.data!.docs;
+
+                            if (classes.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Select Specific Class (Optional)',
+                                  style: Theme.of(context).textTheme.labelLarge
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: AppTheme.spaceXs),
+                                Text(
+                                  'Or leave empty for general course access',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: AppTheme.getTextSecondary(
+                                          context,
+                                        ),
+                                      ),
+                                ),
+                                const SizedBox(height: AppTheme.spaceSm),
+                                DropdownButtonFormField<String>(
+                                  value: selectedClassId,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Class',
+                                    hintText: 'Select a class',
+                                  ),
+                                  items: classes.map((doc) {
+                                    return DropdownMenuItem(
+                                      value: doc.id,
+                                      child: Text(doc['name'] ?? 'Untitled'),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() => selectedClassId = value);
+                                  },
+                                ),
+                                const SizedBox(height: AppTheme.spaceMd),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: AppTheme.spaceXs),
+              ElevatedButton(
+                onPressed: selectedUser == null || provider.isLoading
+                    ? null
+                    : () async {
+                        try {
+                          await provider.inviteStudent(
+                            email: selectedUser!['email'],
+                            courseIds: selectedCourseIds,
+                            classId: selectedClassId,
+                            title: 'Invitation to join our Learning Platform',
+                            body:
+                                'You have been invited to join our organization as a student.',
+                          );
+
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                selectedCourseIds.isEmpty
+                                    ? 'Student invited successfully!'
+                                    : 'Student invited with ${selectedCourseIds.length} course(s)!',
+                              ),
+                            ),
+                          );
+                        } catch (e) {
+                          if (!ctx.mounted) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(e.toString())));
+                        }
+                      },
+                child: provider.isLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Send Invite'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
