@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Notificaton/announcements_widget.dart';
@@ -67,142 +68,139 @@ class _NotiAndEmailsState extends State<NotiAndEmails>
   }
 }
 
-/// Invitations Tab - Show pending organization/class invitations
 class InvitationsTab extends StatelessWidget {
   const InvitationsTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Connect to actual invitation data from NotificationProvider
-    // This is a placeholder implementation
+    final provider = context.watch<NotificationProvider>();
+    final invites = provider.invitations;
 
-    return ListView(
+    if (invites.isEmpty) {
+      return const Center(child: Text('No invitations'));
+    }
+
+    return ListView.separated(
       padding: const EdgeInsets.all(AppTheme.spaceLg),
-      children: [
-        _InvitationCard(
-          organizationName: 'Tech Academy',
-          role: 'Teacher',
-          invitedBy: 'John Smith',
-          date: '2 hours ago',
-          onAccept: () {
-            // TODO: Implement accept invitation
-          },
-          onDecline: () {
-            // TODO: Implement decline invitation
-          },
-        ),
-        const SizedBox(height: AppTheme.spaceMd),
-        _InvitationCard(
-          organizationName: 'Data Science Institute',
-          role: 'Student',
-          invitedBy: 'Dr. Johnson',
-          date: 'Yesterday',
-          onAccept: () {},
-          onDecline: () {},
-        ),
-      ],
+      itemCount: invites.length,
+      separatorBuilder: (_, __) => const SizedBox(height: AppTheme.spaceMd),
+      itemBuilder: (context, index) {
+        return InvitationCard(invite: provider.invitations[index]);
+      },
     );
   }
 }
 
-class _InvitationCard extends StatelessWidget {
-  final String organizationName;
-  final String role;
-  final String invitedBy;
-  final String date;
-  final VoidCallback onAccept;
-  final VoidCallback onDecline;
+class InvitationCard extends StatefulWidget {
+  final QueryDocumentSnapshot invite;
 
-  const _InvitationCard({
-    required this.organizationName,
-    required this.role,
-    required this.invitedBy,
-    required this.date,
-    required this.onAccept,
-    required this.onDecline,
-  });
+  const InvitationCard({super.key, required this.invite});
+  @override
+  State<InvitationCard> createState() => _InvitationCardState();
+}
+
+class _InvitationCardState extends State<InvitationCard> {
+  bool _isProcessing = false;
 
   @override
   Widget build(BuildContext context) {
+    final data = widget.invite.data() as Map<String, dynamic>;
+    final user = FirebaseAuth.instance.currentUser!;
+    final orgName = data['organizationName'] as String? ?? 'Organization';
+    final role = data['role'] as String? ?? 'member';
+    final invitedBy = data['invitedBy'] as String?;
+
     return Container(
       padding: const EdgeInsets.all(AppTheme.spaceMd),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: AppTheme.borderRadiusLg,
-        border: Border.all(color: AppTheme.getBorder(context), width: 1),
+        border: Border.all(color: AppTheme.getBorder(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ---- Header ----
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(AppTheme.spaceXs),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  borderRadius: AppTheme.borderRadiusMd,
-                ),
-                child: Icon(
-                  Icons.mail_outline,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
-                ),
+              Icon(
+                Icons.mail_outline,
+                color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: AppTheme.spaceMd),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      organizationName,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AppTheme.space2xs),
-                    Text(
-                      'Invited as $role',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.getTextSecondary(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                date,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.getTextTertiary(context),
-                  fontSize: 11,
+                child: Text(
+                  orgName,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
             ],
           ),
+
           const SizedBox(height: AppTheme.spaceSm),
-          Text(
-            'Invited by $invitedBy',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.getTextSecondary(context),
-            ),
-          ),
+
+          Text('Invited as $role'),
+
+          if (invitedBy != null)
+            Text('Invited by $invitedBy')
+          else
+            Text('Invited by system'),
+
           const SizedBox(height: AppTheme.spaceMd),
+
+          // ---- Buttons ----
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: onDecline,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.error,
-                    side: BorderSide(color: AppTheme.error, width: 1),
-                  ),
+                  onPressed: _isProcessing
+                      ? null
+                      : () {
+                          context.read<NotificationProvider>().rejectInvitation(
+                            inviteId: widget.invite.id,
+                            orgId: data['orgId'],
+                          );
+                        },
                   child: const Text('Decline'),
                 ),
               ),
               const SizedBox(width: AppTheme.spaceSm),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: onAccept,
-                  child: const Text('Accept'),
+                  onPressed: _isProcessing
+                      ? null
+                      : () async {
+                          setState(() => _isProcessing = true);
+
+                          try {
+                            await context
+                                .read<NotificationProvider>()
+                                .acceptInvitation(
+                                  orgId: data['orgId'],
+                                  inviteId: widget.invite.id,
+                                  userId: user.uid,
+                                  email: user.email!,
+                                  role: data['role'],
+                                );
+                          } catch (e) {
+                            setState(() => _isProcessing = false);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to accept invitation'),
+                              ),
+                            );
+                          }
+                        },
+                  child: _isProcessing
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Accept'),
                 ),
               ),
             ],

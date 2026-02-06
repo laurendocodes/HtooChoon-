@@ -28,9 +28,10 @@ class NotificationProvider extends ChangeNotifier {
     fetchAnnouncements();
   }
 
-  void _listenToInvitations(String email) {
+  void _listenToInvitations(String? email) {
+    if (email == null) return;
+
     _invitationSub?.cancel();
-    print("print email: $email from _listenToInvitations");
 
     _invitationSub = _db
         .collectionGroup('invitations')
@@ -41,8 +42,23 @@ class NotificationProvider extends ChangeNotifier {
           invitations = snapshot.docs;
           notifyListeners();
         });
-    safeChangeNotifier();
   }
+
+  // void _listenToInvitations(String email) {
+  //   _invitationSub?.cancel();
+  //   print("print email: $email from _listenToInvitations");
+  //
+  //   _invitationSub = _db
+  //       .collectionGroup('invitations')
+  //       .where('email', isEqualTo: email)
+  //       .where('status', isEqualTo: 'pending')
+  //       .snapshots()
+  //       .listen((snapshot) {
+  //         invitations = snapshot.docs;
+  //         notifyListeners();
+  //       });
+  //   safeChangeNotifier();
+  // }
 
   Future<void> fetchAnnouncements() async {
     final snapshot = await _db
