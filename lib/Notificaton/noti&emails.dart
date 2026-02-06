@@ -77,6 +77,7 @@ class InvitationsTab extends StatelessWidget {
     final invites = provider.invitations;
 
     if (invites.isEmpty) {
+      print("invitation count: ${invites.length}");
       return const Center(child: Text('No invitations'));
     }
 
@@ -101,7 +102,7 @@ class InvitationCard extends StatefulWidget {
 
 class _InvitationCardState extends State<InvitationCard> {
   bool _isProcessing = false;
-
+  bool _isAccepted = false;
   @override
   Widget build(BuildContext context) {
     final data = widget.invite.data() as Map<String, dynamic>;
@@ -151,60 +152,136 @@ class _InvitationCardState extends State<InvitationCard> {
           const SizedBox(height: AppTheme.spaceMd),
 
           // ---- Buttons ----
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isProcessing
-                      ? null
-                      : () {
-                          context.read<NotificationProvider>().rejectInvitation(
-                            inviteId: widget.invite.id,
-                            orgId: data['orgId'],
-                          );
-                        },
-                  child: const Text('Decline'),
-                ),
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: OutlinedButton(
+          //         onPressed: _isProcessing
+          //             ? null
+          //             : () {
+          //                 context.read<NotificationProvider>().rejectInvitation(
+          //                   inviteId: widget.invite.id,
+          //                   orgId: data['orgId'],
+          //                 );
+          //               },
+          //         child: const Text('Decline'),
+          //       ),
+          //     ),
+          //     const SizedBox(width: AppTheme.spaceSm),
+          //     Expanded(
+          //       child: ElevatedButton(
+          //         onPressed: _isProcessing
+          //             ? null
+          //             : () async {
+          //                 setState(() => _isProcessing = true);
+          //
+          //                 try {
+          //                   await context
+          //                       .read<NotificationProvider>()
+          //                       .acceptInvitation(
+          //                         orgId: data['orgId'],
+          //                         inviteId: widget.invite.id,
+          //                         userId: user.uid,
+          //                         email: user.email!,
+          //                         role: data['role'],
+          //                       );
+          //                   setState(() {
+          //                     _isProcessing = false;
+          //                     _isAccepted = true;
+          //                   });
+          //                 } catch (e) {
+          //                   setState(() => _isProcessing = false);
+          //
+          //                   ScaffoldMessenger.of(context).showSnackBar(
+          //                     const SnackBar(
+          //                       content: Text('Failed to accept invitation'),
+          //                     ),
+          //                   );
+          //                 }
+          //               },
+          //         child: _isProcessing
+          //             ? const SizedBox(
+          //                 height: 18,
+          //                 width: 18,
+          //                 child: CircularProgressIndicator(strokeWidth: 2),
+          //               )
+          //             : const Text('Accept'),
+          //       ),
+          //     ),
+          //   ],
+          // ),
+          if (_isAccepted)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(width: AppTheme.spaceSm),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isProcessing
-                      ? null
-                      : () async {
-                          setState(() => _isProcessing = true);
-
-                          try {
-                            await context
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text(
+                    'Accepted',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isProcessing
+                        ? null
+                        : () {
+                            context
                                 .read<NotificationProvider>()
-                                .acceptInvitation(
-                                  orgId: data['orgId'],
+                                .rejectInvitation(
                                   inviteId: widget.invite.id,
-                                  userId: user.uid,
-                                  email: user.email!,
-                                  role: data['role'],
+                                  orgId: data['orgId'],
                                 );
-                          } catch (e) {
-                            setState(() => _isProcessing = false);
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Failed to accept invitation'),
-                              ),
-                            );
-                          }
-                        },
-                  child: _isProcessing
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Accept'),
+                          },
+                    child: const Text('Decline'),
+                  ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: AppTheme.spaceSm),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isProcessing
+                        ? null
+                        : () async {
+                            setState(() => _isProcessing = true);
+
+                            try {
+                              await context
+                                  .read<NotificationProvider>()
+                                  .acceptInvitation(
+                                    orgId: data['orgId'],
+                                    inviteId: widget.invite.id,
+                                    userId: user.uid,
+                                    email: user.email!,
+                                    role: data['role'],
+                                  );
+
+                              setState(() {
+                                _isProcessing = false;
+                                _isAccepted = true;
+                              });
+                            } catch (e) {
+                              setState(() => _isProcessing = false);
+                            }
+                          },
+                    child: const Text('Accept'),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
