@@ -70,44 +70,6 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Accept invitation
-  Future<void> acceptInvitation({
-    required String orgId,
-    required String inviteId,
-    required String userId,
-    required String email,
-    required String role,
-  }) async {
-    final batch = _db.batch();
-
-    final inviteRef = _db
-        .collection('organizations')
-        .doc(orgId)
-        .collection('invitations')
-        .doc(inviteId);
-
-    final memberRef = _db
-        .collection('organizations')
-        .doc(orgId)
-        .collection('members')
-        .doc(userId);
-
-    batch.update(inviteRef, {
-      'status': 'accepted',
-      'respondedAt': FieldValue.serverTimestamp(),
-    });
-
-    batch.set(memberRef, {
-      'uid': userId,
-      'email': email,
-      'role': role,
-      'status': 'active',
-      'joinedAt': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
-  }
-
   Future<void> rejectInvitation({
     required String orgId,
     required String inviteId,
