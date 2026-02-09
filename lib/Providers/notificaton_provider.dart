@@ -70,13 +70,11 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Accept invitation
   Future<void> acceptInvitation({
     required String orgId,
     required String inviteId,
     required String userId,
     required String email,
-    required String role,
   }) async {
     final batch = _db.batch();
 
@@ -86,24 +84,57 @@ class NotificationProvider extends ChangeNotifier {
         .collection('invitations')
         .doc(inviteId);
 
-    final memberRef = _db
-        .collection('organizations')
-        .doc(orgId)
-        .collection('members')
-        .doc(userId);
+    final inviteSnap = await inviteRef.get();
+    if (!inviteSnap.exists) {
+      throw Exception('Invitation not found');
+    }
+
+    final data = inviteSnap.data()!;
+    final role = data['role'] as String;
+    final classId = data['classId'] as String?;
 
     batch.update(inviteRef, {
       'status': 'accepted',
       'respondedAt': FieldValue.serverTimestamp(),
     });
 
-    batch.set(memberRef, {
-      'uid': userId,
-      'email': email,
-      'role': role,
-      'status': 'active',
-      'joinedAt': FieldValue.serverTimestamp(),
-    });
+    if (role == 'teacher') {
+      final orgMemberRef = _db
+          .collection('organizations')
+          .doc(orgId)
+          .collection('members')
+          .doc(userId);
+
+      batch.set(orgMemberRef, {
+        'uid': userId,
+        'email': email,
+        'role': 'teacher',
+        'status': 'active',
+        'joinedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
+    if (role == 'student') {
+      if (classId == null) {
+        throw Exception('Student invitation missing classId');
+      }
+
+      final classMemberRef = _db
+          .collection('organizations')
+          .doc(orgId)
+          .collection('classes')
+          .doc(classId)
+          .collection('members')
+          .doc(userId);
+
+      batch.set(classMemberRef, {
+        'uid': userId,
+        'email': email,
+        'role': 'student',
+        'status': 'active',
+        'joinedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
 
     await batch.commit();
   }

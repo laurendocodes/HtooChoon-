@@ -272,6 +272,7 @@ class _InvitationCardState extends State<InvitationCard> {
                                     inviteId: widget.invite.id,
                                     userId: user.uid,
                                     email: user.email!,
+
                                     role: data['role'],
                                   );
 

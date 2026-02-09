@@ -64,7 +64,7 @@ class _InvitationTileState extends State<InvitationTile> {
                       inviteId: widget.invite.id,
                       userId: user.uid,
                       email: user.email!,
-                      role: data['role'],
+                      // role: data['role'],
                     );
 
                     // setState(() => _isProcessing = false);
