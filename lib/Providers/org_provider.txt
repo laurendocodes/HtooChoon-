@@ -1,0 +1,48 @@
+// ============================================================
+// INVITATIONS
+// ============================================================
+
+// 1. Invite teacher/admin/moderator
+Future<void> inviteMember(email, role, {title, body})
+
+// 2. Invite student to class
+Future<void> inviteStudent(email, {classId, title, body})
+
+// 3. Accept invitation
+Future<void> acceptInvitation({orgId, inviteId, userId, email})
+
+// 4. Reject invitation
+Future<void> rejectInvitation({orgId, inviteId})
+
+// ============================================================
+// ACCESS CONTROL
+// ============================================================
+
+// 5. Get user role
+Future<String?> getUserRoleInOrg(userId)
+
+// 6. Check access
+Future<bool> canAccessCourse(userId, courseId)
+Future<bool> canAccessClass(userId, classId)
+Future<bool> canEditCourse(userId, courseId)
+
+// 7. Teacher queries
+Future<List> getTeacherClasses(teacherId)
+Future<List> getTeacherCourses(teacherId)
+Future<List> getTeacherStudents(teacherId)
+
+// 8. Admin queries
+Future<List> getAllPrograms(userId)
+Future<List> getAllCourses(userId)
+
+// 9. Assignments (Admin only)
+Future<void> assignTeacherToCourse({teacherId, courseId, ...})
+Future<void> assignTeacherToClass({teacherId, classId, ...})
+
+// 10. Student queries (from earlier)
+Future<List> getStudentClasses(userId)
+Future<List> getClassStudents(classId)
+Future<bool> studentHasAccessToCourse(userId, courseId)
+
+// 11. Dashboard
+Future<Map> getDashboardData(userId)
