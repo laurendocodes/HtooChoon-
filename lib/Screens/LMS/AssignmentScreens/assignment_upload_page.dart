@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class AssignmentDetailPage extends StatelessWidget {
-  const AssignmentDetailPage({Key? key}) : super(key: key);
+class AssignmentUploadPage extends StatelessWidget {
+  const AssignmentUploadPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
