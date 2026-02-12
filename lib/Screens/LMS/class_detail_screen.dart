@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:htoochoon_flutter/Providers/login_provider.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/OrgWidgets/org_dashboard_widgets.dart';
+import 'package:htoochoon_flutter/lms/forms/screens/lms_home_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Screens/LMS/assignment_list_screen.dart';
@@ -18,32 +20,37 @@ class ClassDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<OrgProvider>(
-      builder: (context, orgProvider, child) => DefaultTabController(
-        length: 4,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(className),
-            bottom: const TabBar(
-              isScrollable: true,
-              tabs: [
-                Tab(text: 'Overview'),
-                Tab(text: 'Assignments'),
-                Tab(text: 'Live Sessions'),
-                Tab(text: 'People'),
-              ],
+    return Consumer2<OrgProvider, LoginProvider>(
+      builder: (context, orgProvider, loginProvider, child) =>
+          DefaultTabController(
+            length: 4,
+            child: Scaffold(
+              appBar: AppBar(
+                title: Text(className),
+                bottom: const TabBar(
+                  isScrollable: true,
+                  tabs: [
+                    Tab(text: 'Overview'),
+                    Tab(text: 'Assignments'),
+                    Tab(text: 'Live Sessions'),
+                    Tab(text: 'People'),
+                  ],
+                ),
+              ),
+              body: TabBarView(
+                children: [
+                  _buildOverviewTab(context),
+                  LmsHomeScreen(
+                    userId: loginProvider.uid.toString(),
+                    userRole: "teacher", // handled constantly by screens
+                    classId: classId,
+                  ),
+                  LiveSessionListScreen(classId: classId),
+                  _buildPeopleTab(context, orgProvider),
+                ],
+              ),
             ),
           ),
-          body: TabBarView(
-            children: [
-              _buildOverviewTab(context),
-              AssignmentListScreen(classId: classId),
-              LiveSessionListScreen(classId: classId),
-              _buildPeopleTab(context, orgProvider),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

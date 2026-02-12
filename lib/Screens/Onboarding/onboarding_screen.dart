@@ -17,17 +17,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       "title": "Welcome to Htoo Choon",
       "desc": "The ultimate platform for modern education management.",
-      "image": "assets/onboarding_1.png", // Placeholder
+
+      "image": "assets/images/logo/main_logo.jpeg",
     },
     {
       "title": "Manage Everything",
       "desc": "Classes, courses, students, and teachers - all in one place.",
-      "image": "assets/onboarding_2.png", // Placeholder
+      "image": "assets/lottie/STUDENT.json",
     },
     {
       "title": "Join an Organization",
       "desc": "Create your own school or join an existing one to get started.",
-      "image": "assets/onboarding_3.png", // Placeholder
+      "image": "assets/lottie/teach.json",
     },
   ];
 
@@ -64,6 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Image.asset(
                           'assets/images/logos/main_logo.jpeg',
                           // size: 100,
+                          height: 100,
                           color: Theme.of(context).primaryColor,
                         ),
                         const SizedBox(height: 48),
