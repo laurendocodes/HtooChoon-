@@ -184,20 +184,7 @@ class _PremiumNavigationRail extends StatelessWidget {
             ? MainAxisAlignment.start
             : MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(AppTheme.spaceXs),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-              ),
-              borderRadius: AppTheme.borderRadiusMd,
-            ),
-            child: const Icon(
-              Icons.school_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
+          Image.asset('assets/images/logos/main_logo.jpeg', height: 70),
           if (isExtended) ...[
             const SizedBox(width: AppTheme.spaceSm),
             Expanded(

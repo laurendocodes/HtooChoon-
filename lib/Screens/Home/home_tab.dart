@@ -48,23 +48,9 @@ class HomeTab extends StatelessWidget {
         backgroundColor: Theme.of(context).cardColor,
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppTheme.space2xs),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                ),
-                borderRadius: AppTheme.borderRadiusSm,
-              ),
-              child: const Icon(
-                Icons.school_rounded,
-                size: 20,
-                color: Colors.white,
-              ),
-            ),
             const SizedBox(width: AppTheme.spaceXs),
             Text(
-              'HtooChoon',
+              'Dashboard  ',
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),

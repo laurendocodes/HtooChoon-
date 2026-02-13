@@ -66,19 +66,7 @@ class LogoWidget extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // School / Book Icon
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF4D7CFE).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.school_rounded,
-            size: 28,
-            color: Color(0xFF4D7CFE),
-          ),
-        ),
+        Image.asset('assets/images/logos/main_logo.jpeg', height: 100),
         const SizedBox(width: 12),
         const Text(
           "HtooChoon",
@@ -450,30 +438,11 @@ class _LogoBranding extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.all(AppTheme.spaceSm),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-            ),
-            borderRadius: AppTheme.borderRadiusMd,
-          ),
-          child: const Icon(
-            Icons.school_rounded,
-            size: 28,
-            color: Colors.white,
-          ),
-        ),
+        Image.asset('assets/images/logos/main_logo.jpeg', height: 150),
         const SizedBox(width: AppTheme.spaceSm),
-        Text(
-          'HtooChoon',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.5,
-          ),
-        ),
       ],
     );
   }

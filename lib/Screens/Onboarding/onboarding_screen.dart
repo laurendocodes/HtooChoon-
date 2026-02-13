@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Screens/MainLayout/main_scaffold.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -18,7 +19,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       "title": "Welcome to Htoo Choon",
       "desc": "The ultimate platform for modern education management.",
 
-      "image": "assets/images/logo/main_logo.jpeg",
+      "image": "assets/lottie/STUDENT.json",
     },
     {
       "title": "Manage Everything",
@@ -62,12 +63,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset(
-                          'assets/images/logos/main_logo.jpeg',
-                          // size: 100,
-                          height: 100,
-                          color: Theme.of(context).primaryColor,
+                        SizedBox(
+                          height: 120,
+                          width: 120,
+                          child: Lottie.asset(
+                            _pages[index]['image'].toString(),
+                            height: 500,
+                          ),
                         ),
+
                         const SizedBox(height: 48),
                         Text(
                           _pages[index]['title']!,
