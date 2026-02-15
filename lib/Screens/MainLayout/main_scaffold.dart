@@ -75,7 +75,7 @@ class _MainScaffoldState extends State<MainScaffold> {
               ),
 
               VerticalDivider(
-                width: 1,
+                width: 1.2,
                 thickness: 1,
                 color: AppTheme.getBorder(context),
               ),
