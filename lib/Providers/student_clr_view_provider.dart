@@ -4,6 +4,11 @@ import 'package:flutter/material.dart';
 
 class StudentClassroomProvider extends ChangeNotifier {
   bool isDisposed = false;
+  List<Map<String, dynamic>> joinedClasses = [];
+
+  bool isLoadingClasses = false;
+
+  String? errorMessage;
 
   /// Get joined classrooms/ prograss bar / tr name / days time
   /// Get assignments/tests/
@@ -36,37 +41,45 @@ class StudentClassroomProvider extends ChangeNotifier {
     return orgIds;
   }
 
-  Future<List<Map<String, dynamic>>> fetchJoinedClasses(
-    String studentId,
-  ) async {
-    final orgIds = await getStudentOrganizations(studentId);
+  Future<void> fetchJoinedClasses(String studentId) async {
+    try {
+      print("Loading classes");
+      isLoadingClasses = true;
+      safeChangeNotifier();
+      final orgIds = await getStudentOrganizations(studentId);
 
-    List<Map<String, dynamic>> studentClasses = [];
+      List<Map<String, dynamic>> studentClasses = [];
 
-    for (String orgId in orgIds) {
-      final orgDoc = await FirebaseFirestore.instance
-          .collection('organizations')
-          .doc(orgId)
-          .get();
+      for (String orgId in orgIds) {
+        final orgDoc = await FirebaseFirestore.instance
+            .collection('organizations')
+            .doc(orgId)
+            .get();
 
-      final classes = orgDoc.data()?['classes'] as Map<String, dynamic>?;
+        final classes = orgDoc.data()?['classes'] as Map<String, dynamic>?;
 
-      if (classes == null) continue;
+        if (classes == null) continue;
 
-      classes.forEach((classId, classData) {
-        final members = classData['members'] as Map<String, dynamic>?;
+        classes.forEach((classId, classData) {
+          final members = classData['members'] as Map<String, dynamic>?;
 
-        if (members != null && members.containsKey(studentId)) {
-          studentClasses.add({
-            "orgId": orgId,
-            "classId": classId,
-            ...classData,
-          });
-        }
-      });
+          if (members != null && members.containsKey(studentId)) {
+            studentClasses.add({
+              "orgId": orgId,
+              "classId": classId,
+              ...classData,
+            });
+          }
+        });
+        print(studentClasses.length);
+      }
+      joinedClasses = studentClasses;
+    } catch (e) {
+      errorMessage = e.toString();
+    } finally {
+      isLoadingClasses = false;
+      safeChangeNotifier();
     }
-
-    return studentClasses;
   }
 
   Future<Map<String, dynamic>?> getCourseForClass(
@@ -94,6 +107,15 @@ class StudentClassroomProvider extends ChangeNotifier {
         .get();
 
     return doc.data();
+  }
+
+  double calculateClassProgress(Map<String, dynamic> classData) {
+    final totalClasses = classData['totalClasses'] ?? 0;
+    final completed = classData['completedClasses'] ?? 0;
+
+    if (totalClasses == 0) return 0;
+
+    return completed / totalClasses;
   }
 
   void safeChangeNotifier() {

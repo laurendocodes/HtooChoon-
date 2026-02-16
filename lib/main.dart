@@ -7,6 +7,7 @@ import 'package:htoochoon_flutter/Providers/invitation_provider.dart';
 import 'package:htoochoon_flutter/Providers/login_provider.dart';
 
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
+import 'package:htoochoon_flutter/Providers/student_clr_view_provider.dart';
 import 'package:htoochoon_flutter/Providers/user_provider.dart';
 import 'package:htoochoon_flutter/Providers/structure_provider.dart';
 import 'package:htoochoon_flutter/Providers/subscription_provider.dart';
@@ -39,6 +40,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => AssignmentProvider()),
         ChangeNotifierProvider(create: (context) => StructureProvider()),
         ChangeNotifierProvider(create: (context) => ClassProvider()),
+        ChangeNotifierProvider(create: (context) => StudentClassroomProvider()),
         ChangeNotifierProvider(
           create: (context) => SubscriptionProvider(),
         ), // New

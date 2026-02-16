@@ -2,11 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:flutter/material.dart';
+import 'package:htoochoon_flutter/Providers/login_provider.dart';
+import 'package:htoochoon_flutter/Providers/student_clr_view_provider.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
 import 'package:htoochoon_flutter/lms/forms/screens/lms_home_screen.dart';
+import 'package:provider/provider.dart';
 
-class ClassesTab extends StatelessWidget {
-  ClassesTab({super.key});
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart'; // Run: flutter pub add shimmer
+
+class ClassesTab extends StatefulWidget {
+  const ClassesTab({super.key});
+
+  @override
+  State<ClassesTab> createState() => _ClassesTabState();
+}
+
+class _ClassesTabState extends State<ClassesTab> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final loginProvider = context.read<LoginProvider>();
+      final classProvider = context.read<StudentClassroomProvider>();
+
+      final user = loginProvider.firebaseUser;
+
+      if (user != null) {
+        final studentId = loginProvider.uid;
+        classProvider.fetchJoinedClasses(studentId.toString());
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,53 +50,94 @@ class ClassesTab extends StatelessWidget {
             context,
           ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.filter_list, size: 22),
-          ),
-          const SizedBox(width: AppTheme.spaceXs),
-        ],
       ),
-      body: ListView(
+      body: Consumer<StudentClassroomProvider>(
+        builder: (_, provider, __) {
+          if (provider.isLoadingClasses) {
+            return const _ClassesLoadingSkeleton();
+          }
+
+          final activeClasses = provider.joinedClasses
+              .where((c) => c['status'] != 'completed')
+              .toList();
+
+          final pastClasses = provider.joinedClasses
+              .where((c) => c['status'] == 'completed')
+              .toList();
+
+          if (activeClasses.isEmpty && pastClasses.isEmpty) {
+            return const Center(child: Text("No classes found."));
+          }
+
+          return ListView(
+            padding: const EdgeInsets.all(AppTheme.spaceLg),
+            children: [
+              if (activeClasses.isNotEmpty) ...[
+                const _SectionLabel(label: 'Active'),
+                const SizedBox(height: AppTheme.spaceMd),
+                ...activeClasses.map(
+                  (classData) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppTheme.spaceMd),
+                    child: _ClassListItem(
+                      title: classData['name'] ?? '',
+                      days:
+                          "${classData['schedule']?['days']?.join(', ') ?? ''} • ${classData['schedule']?['time'] ?? ''}",
+                      instructor: classData['teacherId'] ?? '',
+                      progress: 0.4,
+                      statusColor: AppTheme.success,
+                      statusText: 'On Track',
+                    ),
+                  ),
+                ),
+              ],
+              if (pastClasses.isNotEmpty) ...[
+                const SizedBox(height: AppTheme.space2xl),
+                const _SectionLabel(label: 'Past'),
+                const SizedBox(height: AppTheme.spaceMd),
+                ...pastClasses.map(
+                  (classData) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppTheme.spaceMd),
+                    child: _ClassListItem(
+                      title: classData['name'] ?? '',
+                      days: 'Completed',
+                      instructor: classData['teacherId'] ?? '',
+                      progress: 1.0,
+                      statusColor: AppTheme.getTextTertiary(context),
+                      statusText: 'Completed',
+                      isCompleted: true,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ClassesLoadingSkeleton extends StatelessWidget {
+  const _ClassesLoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
         padding: const EdgeInsets.all(AppTheme.spaceLg),
-        children: [
-          // Active Classes Section
-          _SectionLabel(label: 'Active'),
-          const SizedBox(height: AppTheme.spaceMd),
-          _ClassListItem(
-            title: 'Python Basics (Batch A)',
-            days: 'Mon, Wed • 10:00 AM',
-            instructor: 'Dr. Smith',
-            progress: 0.45,
-            statusColor: AppTheme.success,
-            statusText: 'On Track',
+        itemCount: 5,
+        itemBuilder: (_, __) => Padding(
+          padding: const EdgeInsets.only(bottom: AppTheme.spaceMd),
+          child: Container(
+            height: 100,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: AppTheme.borderRadiusLg,
+            ),
           ),
-          const SizedBox(height: AppTheme.spaceMd),
-          _ClassListItem(
-            title: 'Web Development Bootcamp',
-            days: 'Tue, Thu • 2:00 PM',
-            instructor: 'Prof. Johnson',
-            progress: 0.1,
-            statusColor: AppTheme.warning,
-            statusText: 'Behind',
-          ),
-
-          const SizedBox(height: AppTheme.space2xl),
-
-          // Past Classes Section
-          _SectionLabel(label: 'Past'),
-          const SizedBox(height: AppTheme.spaceMd),
-          _ClassListItem(
-            title: 'Intro to CS',
-            days: 'Completed',
-            instructor: 'Dr. Smith',
-            progress: 1.0,
-            statusColor: AppTheme.getTextTertiary(context),
-            statusText: 'Completed',
-            isCompleted: true,
-          ),
-        ],
+        ),
       ),
     );
   }

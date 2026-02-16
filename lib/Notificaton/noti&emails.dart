@@ -106,7 +106,7 @@ class _InvitationCardState extends State<InvitationCard> {
     final data = widget.invite.data() as Map<String, dynamic>;
 
     final user = FirebaseAuth.instance.currentUser!;
-    final orgName = data['organizationName'] as String? ?? 'Organization';
+    final orgName = data['orgName'] as String? ?? 'Organization';
     final role = data['role'] as String? ?? 'member';
     final invitedBy = data['invitedBy'] as String?;
     final status =
