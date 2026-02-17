@@ -44,14 +44,14 @@ class LiveSessionDetailScreen extends StatelessWidget {
               const SizedBox(height: 24),
               Text(
                 title,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              Text(
-                message,
-                style: TextStyle(fontSize: 18, color: color),
-              ),
+              Text(message, style: TextStyle(fontSize: 18, color: color)),
               const SizedBox(height: 48),
               if (status == 'live' || status == 'upcoming')
                 SizedBox(
@@ -64,7 +64,9 @@ class LiveSessionDetailScreen extends StatelessWidget {
                     label: const Text("Join Meeting"),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: status == 'live' ? Colors.red : Colors.blue,
+                      backgroundColor: status == 'live'
+                          ? Colors.red
+                          : Colors.blue,
                       foregroundColor: Colors.white,
                     ),
                   ),

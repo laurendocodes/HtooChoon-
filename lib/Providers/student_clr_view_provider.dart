@@ -47,7 +47,7 @@ class StudentClassroomProvider extends ChangeNotifier {
       isLoadingClasses = true;
       safeChangeNotifier();
       final orgIds = await getStudentOrganizations(studentId);
-
+      print("got orgIds classes ${orgIds.length}");
       List<Map<String, dynamic>> studentClasses = [];
 
       for (String orgId in orgIds) {

@@ -21,7 +21,7 @@ class ProgramDetailScreen extends StatelessWidget {
     final orgProvider = Provider.of<OrgProvider>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -489,7 +489,7 @@ class CourseDetailScreen extends StatelessWidget {
     final orgProvider = Provider.of<OrgProvider>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: Text(courseTitle)),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance

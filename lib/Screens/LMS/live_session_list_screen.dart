@@ -34,13 +34,17 @@ class LiveSessionListScreen extends StatelessWidget {
 
         return Card(
           elevation: isUpcoming ? 2 : 0,
-          color: isUpcoming ? null : Colors.grey[50],
+          color: isUpcoming
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).scaffoldBackgroundColor,
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isUpcoming ? Colors.red.withOpacity(0.1) : Colors.grey[200],
+                color: isUpcoming
+                    ? Colors.red.withOpacity(0.1)
+                    : Colors.grey[200],
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -55,7 +59,9 @@ class LiveSessionListScreen extends StatelessWidget {
                 color: isUpcoming ? Colors.black : Colors.grey,
               ),
             ),
-            subtitle: Text(isUpcoming ? 'Starts in 2 hours' : 'Ended yesterday'),
+            subtitle: Text(
+              isUpcoming ? 'Starts in 2 hours' : 'Ended yesterday',
+            ),
             trailing: isUpcoming
                 ? ElevatedButton(
                     onPressed: () {},

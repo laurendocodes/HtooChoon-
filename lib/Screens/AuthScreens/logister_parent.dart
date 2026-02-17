@@ -6,9 +6,8 @@ import 'package:htoochoon_flutter/Screens/AdminScreens/admin_home_parent.dart';
 import 'package:htoochoon_flutter/Screens/AuthScreens/login_screen.dart';
 import 'package:htoochoon_flutter/Screens/AuthScreens/register_screen.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/org_core_home.dart';
-import 'package:htoochoon_flutter/Screens/OrgScreens/org_super_home.dart';
+
 import 'package:htoochoon_flutter/Screens/OrgScreens/org_upgrade_screen.dart';
-import 'package:htoochoon_flutter/Screens/OrgScreens/organization_plus_home.dart';
 
 import 'package:htoochoon_flutter/Screens/UserScreens/apex_user_home.dart';
 import 'package:htoochoon_flutter/Screens/UserScreens/free_user_home.dart';

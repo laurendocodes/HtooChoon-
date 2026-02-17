@@ -103,7 +103,6 @@ class _FormBuilderContent extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Card(
-        color: Colors.blue[50],
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -113,8 +112,8 @@ class _FormBuilderContent extends StatelessWidget {
                 decoration: const InputDecoration(
                   labelText: 'Form Title',
                   border: OutlineInputBorder(),
-                  filled: true,
-                  fillColor: Colors.white,
+                  // filled: true,
+                  // fillColor: Colors.white,
                 ),
                 style: const TextStyle(
                   fontSize: 20,
@@ -128,8 +127,8 @@ class _FormBuilderContent extends StatelessWidget {
                 decoration: const InputDecoration(
                   labelText: 'Description',
                   border: OutlineInputBorder(),
-                  filled: true,
-                  fillColor: Colors.white,
+                  // filled: true,
+                  // fillColor: Colors.white,
                 ),
                 maxLines: 2,
                 onChanged: (val) => provider.updateMetadata(description: val),

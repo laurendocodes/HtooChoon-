@@ -174,11 +174,7 @@ class ClassDetailScreen extends StatelessWidget {
           children: [
             Text(
               title,
-              style: TextStyle(
-                fontSize: 24,
-                color: Theme.of(context).primaryColor,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
             ),
             if (trailing != null) trailing,
           ],
@@ -208,8 +204,8 @@ class ClassDetailScreen extends StatelessWidget {
               name[0].toUpperCase(), // First letter of name
               style: TextStyle(
                 color: isTeacher
-                    ? Theme.of(context).primaryColor
-                    : Colors.black87,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).primaryColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
