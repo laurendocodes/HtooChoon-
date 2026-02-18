@@ -197,7 +197,7 @@ Widget _buildHeader(
           ),
           child: (orgImageUrl == null)
               ? const Icon(Icons.school, color: Colors.white, size: 24)
-              : Image.asset(orgImageUrl.toString(), height: 70),
+              : Image.asset(orgImageUrl.toString(), height: 65),
         ),
         if (isExtended) ...[
           const SizedBox(width: AppTheme.spaceSm),
@@ -350,6 +350,7 @@ class _NavItemState extends State<_NavItem> {
                     Expanded(
                       child: Text(
                         widget.label,
+                        overflow: TextOverflow.clip,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: color,
                           fontWeight: widget.isSelected

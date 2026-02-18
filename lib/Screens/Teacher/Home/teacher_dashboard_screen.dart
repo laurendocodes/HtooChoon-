@@ -1,22 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
+import 'package:htoochoon_flutter/Screens/MainLayout/main_scaffold.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/OrgWidgets/premium_sidebar.dart';
+import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/org_core_home.dart';
+import 'package:htoochoon_flutter/Screens/OrgScreens/org_tabs/members_tab.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
 import 'package:htoochoon_flutter/Screens/Teacher/Widgets/teacher_widgets.dart';
 import 'package:provider/provider.dart';
 
-class TeacherDashboardScreen extends StatelessWidget {
-  const TeacherDashboardScreen({super.key});
+class TeacherDashboardScreen extends StatefulWidget {
+  final String? currentOrgID;
+  final String? currentOrgName;
+  final String? role;
+
+  const TeacherDashboardScreen({
+    super.key,
+    required this.currentOrgID,
+    required this.currentOrgName,
+    required this.role,
+  });
+
+  @override
+  State<TeacherDashboardScreen> createState() => _TeacherDashboardScreenState();
+}
+
+class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
+  int _selectedIndex = 0;
+
+  late final List<Widget> _pages = [
+    const Dash(),
+    const AllProgramsScreen(),
+    const MemberFilterScreen(),
+    const TeachersListScreen(),
+    const StudentsListScreen(),
+  ];
+
+  void _onSelect(int index) {
+    setState(() => _selectedIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Responsive Layout Wrapper
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth > 900) {
-          return _DesktopLayout();
+          return _DesktopLayout(
+            selectedIndex: _selectedIndex,
+            pages: _pages,
+            onSelect: _onSelect,
+          );
         } else {
-          return _MobileLayout();
+          return _MobileLayout(
+            selectedIndex: _selectedIndex,
+            pages: _pages,
+            onSelect: _onSelect,
+          );
         }
       },
     );
@@ -27,105 +65,74 @@ class TeacherDashboardScreen extends StatelessWidget {
 // DESKTOP LAYOUT
 // -----------------------------------------------------------------------------
 class _DesktopLayout extends StatefulWidget {
-  _DesktopLayout();
+  final int selectedIndex;
+  final List<Widget> pages;
+  final Function(int) onSelect;
+
+  const _DesktopLayout({
+    required this.selectedIndex,
+    required this.pages,
+    required this.onSelect,
+  });
 
   @override
   State<_DesktopLayout> createState() => _DesktopLayoutState();
 }
 
 class _DesktopLayoutState extends State<_DesktopLayout> {
-  int _selectedIndex = 0;
-
   @override
   Widget build(BuildContext context) {
+    final List<Widget> _pages = [
+      const Dash(),
+      const AllProgramsScreen(),
+      const MemberFilterScreen(),
+      const TeachersListScreen(),
+      const StudentsListScreen(),
+    ];
     final theme = Theme.of(context);
     final isExtended = MediaQuery.of(context).size.width > 1200;
+    final orgProvider = context.watch<OrgProvider>();
 
-    return Consumer<OrgProvider>(
-      builder: (context, orgProvider, child) => Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        body: Row(
-          children: [
-            // 1. Sidebar
-            Container(
-              width: 260,
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                border: Border(
-                  right: BorderSide(color: AppTheme.getBorder(context)),
+    // Handle organization exit
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (orgProvider.lastAction == OrgAction.exited) {
+        orgProvider.clearLastAction();
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => MainScaffold()),
+          (route) => false,
+        );
+      }
+    });
+
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: Row(
+            children: [
+              // Sidebar Navigation
+              PremiumSidebar(
+                orgName: orgProvider.currentOrgName.toString(),
+                selectedIndex: widget.selectedIndex,
+                onDestinationSelected: widget.onSelect,
+                isExtended: isExtended,
+                role: orgProvider.role,
+              ),
+
+              // Main Content Area
+              Expanded(
+                child: IndexedStack(
+                  index: widget.selectedIndex,
+                  children: _pages,
                 ),
               ),
-              child: PremiumSidebar(
-                role: orgProvider.role,
-                orgName: orgProvider.currentOrgName.toString(),
-                selectedIndex: _selectedIndex,
-                onDestinationSelected: (index) {
-                  setState(() => _selectedIndex = index);
-                },
-                isExtended: isExtended,
-              ),
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  const _DashboardHeader(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(AppTheme.spaceLg),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Quick Stats Row
-                          const _MetricsSection(),
-                          const SizedBox(height: AppTheme.spaceLg),
-
-                          // Action Required
-                          const _ActionRequiredSection(),
-                          const SizedBox(height: AppTheme.spaceLg),
-
-                          // Main Grid (Classes | Leaderboard)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: const _TodaysClassesSection(),
-                              ),
-                              const SizedBox(width: AppTheme.spaceLg),
-                              Expanded(
-                                flex: 1,
-                                child: const _LeaderboardSection(),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: AppTheme.spaceLg),
-
-                          // Secondary Grid (Student Status | Calendar placeholder)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: const _StudentStatusSection(),
-                              ),
-                              const SizedBox(width: AppTheme.spaceLg),
-                              Expanded(
-                                flex: 1,
-                                child: const _CalendarSectionPlaceholder(),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+
+        // Loading Overlay
+        GlobalOrgSwitchOverlay(loadingText: "Exiting organization…"),
+      ],
     );
   }
 }
@@ -134,7 +141,15 @@ class _DesktopLayoutState extends State<_DesktopLayout> {
 // MOBILE LAYOUT
 // -----------------------------------------------------------------------------
 class _MobileLayout extends StatelessWidget {
-  const _MobileLayout();
+  final int selectedIndex;
+  final List<Widget> pages;
+  final Function(int) onSelect;
+
+  const _MobileLayout({
+    required this.selectedIndex,
+    required this.pages,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -142,33 +157,83 @@ class _MobileLayout extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Text(_getTitle(selectedIndex)),
         backgroundColor: theme.cardColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: AppTheme.getTextSecondary(context)),
       ),
+
       drawer: Drawer(
         backgroundColor: theme.cardColor,
-        child: const _SidebarContent(),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spaceMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _DashboardHeader(isMobile: true),
-            const SizedBox(height: AppTheme.spaceMd),
-            const _MetricsSection(isMobile: true),
-            const SizedBox(height: AppTheme.spaceMd),
-            const _ActionRequiredSection(isMobile: true),
-            const SizedBox(height: AppTheme.spaceMd),
-            const _TodaysClassesSection(),
-            const SizedBox(height: AppTheme.spaceMd),
-            const _LeaderboardSection(),
-          ],
+        child: SafeArea(
+          child: _SidebarContent(
+            selectedIndex: selectedIndex,
+            onTap: (index) {
+              onSelect(index);
+              Navigator.pop(context); // close drawer
+            },
+          ),
         ),
       ),
+
+      body: pages[selectedIndex],
+    );
+  }
+
+  String _getTitle(int index) {
+    switch (index) {
+      case 0:
+        return "Dashboard";
+      case 1:
+        return "Programs";
+      case 2:
+        return "Members";
+      case 3:
+        return "Teachers";
+      case 4:
+        return "Students";
+      default:
+        return "Dashboard";
+    }
+  }
+}
+
+class _SidebarContent extends StatelessWidget {
+  final int selectedIndex;
+  final Function(int) onTap;
+
+  const _SidebarContent({required this.selectedIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        const DrawerHeader(
+          child: Text(
+            "Teacher Panel",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+        _tile(Icons.dashboard, "Dashboard", 0),
+        _tile(Icons.school, "Programs", 1),
+        _tile(Icons.group, "Members", 2),
+        _tile(Icons.person, "Teachers", 3),
+        _tile(Icons.groups, "Students", 4),
+      ],
+    );
+  }
+
+  Widget _tile(IconData icon, String title, int index) {
+    return Builder(
+      builder: (context) {
+        return ListTile(
+          selected: selectedIndex == index,
+          leading: Icon(icon),
+          title: Text(title),
+          onTap: () => onTap(index),
+        );
+      },
     );
   }
 }
@@ -176,127 +241,6 @@ class _MobileLayout extends StatelessWidget {
 // -----------------------------------------------------------------------------
 // SECTIONS & WIDGETS
 // -----------------------------------------------------------------------------
-
-class _SidebarContent extends StatelessWidget {
-  const _SidebarContent();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 32),
-        // Logo Placeholder
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.school,
-              size: 32,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'EduDash',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        const SizedBox(height: 48),
-
-        // Navigation Items
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            children: [
-              SidebarItem(
-                icon: Icons.dashboard_outlined,
-                label: 'Dashboard',
-                isSelected: true,
-                onTap: () {},
-              ),
-              SidebarItem(
-                icon: Icons.class_outlined,
-                label: 'Classrooms',
-                isSelected: false,
-                onTap: () {},
-              ),
-              SidebarItem(
-                icon: Icons.people_outline,
-                label: 'Students',
-                isSelected: false,
-                onTap: () {},
-              ),
-              SidebarItem(
-                icon: Icons.bar_chart_outlined,
-                label: 'Performance',
-                isSelected: false,
-                onTap: () {},
-              ),
-              SidebarItem(
-                icon: Icons.book_outlined,
-                label: 'Courses',
-                isSelected: false,
-                onTap: () {},
-              ),
-              SidebarItem(
-                icon: Icons.calendar_today_outlined,
-                label: 'Calendar',
-                isSelected: false,
-                onTap: () {},
-              ),
-              SidebarItem(
-                icon: Icons.emoji_events_outlined,
-                label: 'Leaderboard',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-
-        // User Profile
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: AppTheme.getBorder(context))),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                radius: 16,
-                child: const Text(
-                  'MJ',
-                  style: TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Mr. John',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    'Teacher',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.getTextTertiary(context),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _DashboardHeader extends StatelessWidget {
   final bool isMobile;
@@ -767,6 +711,135 @@ class _CalendarSectionPlaceholder extends StatelessWidget {
               child: const Center(
                 child: Icon(Icons.calendar_month, size: 48, color: Colors.grey),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Dash extends StatelessWidget {
+  const Dash({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(isDesktop ? 32 : 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              _DashboardHeader(isMobile: !isDesktop),
+
+              const SizedBox(height: 24),
+
+              // Metrics Section
+              _ResponsiveMetrics(isDesktop: isDesktop),
+
+              const SizedBox(height: 24),
+
+              // Action Required
+              _ActionRequiredSection(isMobile: !isDesktop),
+
+              const SizedBox(height: 24),
+
+              // Classes + Leaderboard side by side on desktop
+              isDesktop
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Expanded(child: _TodaysClassesSection()),
+                        SizedBox(width: 24),
+                        Expanded(child: _LeaderboardSection()),
+                      ],
+                    )
+                  : Column(
+                      children: const [
+                        _TodaysClassesSection(),
+                        SizedBox(height: 24),
+                        _LeaderboardSection(),
+                      ],
+                    ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ResponsiveMetrics extends StatelessWidget {
+  final bool isDesktop;
+
+  const _ResponsiveMetrics({required this.isDesktop});
+
+  @override
+  Widget build(BuildContext context) {
+    if (isDesktop) {
+      return GridView.count(
+        crossAxisCount: 4,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.8,
+        children: const [
+          _MetricCard(title: "Students", value: "120"),
+          _MetricCard(title: "Teachers", value: "8"),
+          _MetricCard(title: "Programs", value: "5"),
+          _MetricCard(title: "Attendance", value: "92%"),
+        ],
+      );
+    } else {
+      return Column(
+        children: const [
+          _MetricCard(title: "Students", value: "120"),
+          SizedBox(height: 16),
+          _MetricCard(title: "Teachers", value: "8"),
+          SizedBox(height: 16),
+          _MetricCard(title: "Programs", value: "5"),
+          SizedBox(height: 16),
+          _MetricCard(title: "Attendance", value: "92%"),
+        ],
+      );
+    }
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+
+  const _MetricCard({required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(title, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],

@@ -48,8 +48,9 @@ class _MainScaffoldState extends State<MainScaffold> {
         Widget dashboard;
         if (orgProvider.role == 'teacher') {
           dashboard = TeacherDashboardScreen(
-            // currentOrgID: orgProvider.currentOrgId,
-            // currentOrgName: orgProvider.currentOrgName ?? "Htoo Choon",
+            currentOrgID: orgProvider.currentOrgId,
+            currentOrgName: orgProvider.currentOrgName ?? "Htoo Choon",
+            role: orgProvider.role,
           );
         } else {
           dashboard = PremiumDashboardWrapper(
