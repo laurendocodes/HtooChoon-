@@ -105,6 +105,9 @@ class OrgProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void printRole() {
+    print("roleeeeee${_role}");
+  }
   // ============================================================
   // ORGANIZATION OPERATIONS
   // ============================================================

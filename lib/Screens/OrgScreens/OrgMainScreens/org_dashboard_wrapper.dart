@@ -15,10 +15,12 @@ import 'package:provider/provider.dart';
 class PremiumDashboardWrapper extends StatefulWidget {
   final String? currentOrgID;
   final String? currentOrgName;
+  final String? role;
   const PremiumDashboardWrapper({
     super.key,
     required this.currentOrgID,
     required this.currentOrgName,
+    required this.role,
   });
 
   @override
@@ -67,6 +69,7 @@ class _PremiumDashboardWrapperState extends State<PremiumDashboardWrapper> {
                   setState(() => _selectedIndex = index);
                 },
                 isExtended: isExtended,
+                role: orgProvider.role,
               ),
 
               // Main Content Area

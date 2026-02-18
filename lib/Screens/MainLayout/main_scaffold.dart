@@ -11,6 +11,7 @@ import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/org_core_hom
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/org_dashboard_wrapper.dart';
 import 'package:htoochoon_flutter/Screens/OrgScreens/org_context_loader.dart';
 import 'package:htoochoon_flutter/Screens/Profile/profile_tab.dart'; // Implemented
+import 'package:htoochoon_flutter/Screens/Teacher/Home/teacher_dashboard_screen.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
@@ -40,18 +41,26 @@ class _MainScaffoldState extends State<MainScaffold> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final loginProvider = Provider.of<LoginProvider>(context, listen: false);
     final orgProvider = context.watch<OrgProvider>();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (orgProvider.justSwitched) {
         orgProvider.clearJustSwitched();
 
+        Widget dashboard;
+        if (orgProvider.role == 'teacher') {
+          dashboard = TeacherDashboardScreen(
+            // currentOrgID: orgProvider.currentOrgId,
+            // currentOrgName: orgProvider.currentOrgName ?? "Htoo Choon",
+          );
+        } else {
+          dashboard = PremiumDashboardWrapper(
+            currentOrgID: orgProvider.currentOrgId,
+            currentOrgName: orgProvider.currentOrgName ?? "Htoo Choon",
+            role: orgProvider.role,
+          );
+        }
+
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => PremiumDashboardWrapper(
-              currentOrgID: orgProvider.currentOrgId,
-              currentOrgName: orgProvider.currentOrgName ?? "Htoo Choon",
-            ),
-          ),
+          MaterialPageRoute(builder: (_) => dashboard),
           (route) => false,
         );
       }
