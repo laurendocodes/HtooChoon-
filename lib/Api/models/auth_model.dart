@@ -1,5 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
-
+import 'package:retrofit/http.dart';
 part 'auth_model.g.dart';
 
 @JsonSerializable()
@@ -13,11 +13,11 @@ class RegisterAccountRequest {
     required this.name,
     required this.password,
   });
-  //
-  // factory RegisterAccountRequest.fromJson(Map<String, dynamic> json) =>
-  //     _$RegisterAccountRequestFromJson(json);
-  //
-  // Map<String, dynamic> toJson() => _$RegisterAccountRequestToJson(this);
+
+  factory RegisterAccountRequest.fromJson(Map<String, dynamic> json) =>
+      _$RegisterAccountRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RegisterAccountRequestToJson(this);
 }
 
 @JsonSerializable()
@@ -27,10 +27,10 @@ class RegisterAccountResponse {
 
   RegisterAccountResponse({required this.success, required this.message});
 
-  // factory RegisterAccountResponse.fromJson(Map<String, dynamic> json) =>
-  //     _$RegisterAccountResponseFromJson(json);
-  //
-  // Map<String, dynamic> toJson() => _$RegisterAccountResponseToJson(this);
+  factory RegisterAccountResponse.fromJson(Map<String, dynamic> json) =>
+      _$RegisterAccountResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RegisterAccountResponseToJson(this);
 }
 
 @JsonSerializable()
@@ -39,10 +39,10 @@ class SendOtpRequest {
 
   SendOtpRequest({required this.email});
 
-  // factory SendOtpRequest.fromJson(Map<String, dynamic> json) =>
-  //     _$SendOtpRequestFromJson(json);
-  //
-  // Map<String, dynamic> toJson() => _$SendOtpRequestToJson(this);
+  factory SendOtpRequest.fromJson(Map<String, dynamic> json) =>
+      _$SendOtpRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SendOtpRequestToJson(this);
 }
 
 @JsonSerializable()
@@ -52,10 +52,10 @@ class SendOtpResponse {
 
   SendOtpResponse({required this.success, required this.message});
 
-  // factory SendOtpResponse.fromJson(Map<String, dynamic> json) =>
-  //     _$SendOtpResponseFromJson(json);
-  //
-  // Map<String, dynamic> toJson() => _$SendOtpResponseToJson(this);
+  factory SendOtpResponse.fromJson(Map<String, dynamic> json) =>
+      _$SendOtpResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SendOtpResponseToJson(this);
 }
 
 @JsonSerializable()
@@ -65,10 +65,10 @@ class VerifyOtpRequest {
 
   VerifyOtpRequest({required this.email, required this.otp});
 
-  // factory VerifyOtpRequest.fromJson(Map<String, dynamic> json) =>
-  //     _$VerifyOtpRequestFromJson(json);
-  //
-  // Map<String, dynamic> toJson() => _$VerifyOtpRequestToJson(this);
+  factory VerifyOtpRequest.fromJson(Map<String, dynamic> json) =>
+      _$VerifyOtpRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$VerifyOtpRequestToJson(this);
 }
 
 @JsonSerializable()
@@ -78,10 +78,10 @@ class VerifyOtpResponse {
 
   VerifyOtpResponse({required this.success, required this.message});
 
-  // factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) =>
-  //     _$VerifyOtpResponseFromJson(json);
-  //
-  // Map<String, dynamic> toJson() => _$VerifyOtpResponseToJson(this);
+  factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) =>
+      _$VerifyOtpResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$VerifyOtpResponseToJson(this);
 }
 
 @JsonSerializable()
@@ -91,10 +91,10 @@ class LoginRequest {
 
   LoginRequest({required this.email, required this.password});
 
-  // factory LoginRequest.fromJson(Map<String, dynamic> json) =>
-  //     _$LoginRequestFromJson(json);
-  //
-  // Map<String, dynamic> toJson() => _$LoginRequestToJson(this);
+  factory LoginRequest.fromJson(Map<String, dynamic> json) =>
+      _$LoginRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$LoginRequestToJson(this);
 }
 
 @JsonSerializable()
@@ -111,10 +111,10 @@ class LoginResponse {
     this.user,
   });
 
-  // factory LoginResponse.fromJson(Map<String, dynamic> json) =>
-  //     _$LoginResponseFromJson(json);
-  //
-  // Map<String, dynamic> toJson() => _$LoginResponseToJson(this);
+  factory LoginResponse.fromJson(Map<String, dynamic> json) =>
+      _$LoginResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$LoginResponseToJson(this);
 }
 
 @JsonSerializable()
@@ -125,8 +125,7 @@ class User {
 
   User({required this.id, required this.email, required this.name});
 
-  // factory User.fromJson(Map<String, dynamic> json) =>
-  //     _$UserFromJson(json);
-  //
-  // Map<String, dynamic> toJson() => _$UserToJson(this);
+  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+
+  Map<String, dynamic> toJson() => _$UserToJson(this);
 }
