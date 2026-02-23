@@ -17,8 +17,8 @@ abstract class ApiService {
     @Body() RegisterAccountRequest request,
   );
 
-  @POST("auth/send-otp")
-  Future<SendOtpResponse> sendOtp(@Body() SendOtpRequest request);
+  @POST("auth/request-otp")
+  Future<RequestOtpResponse> requestOtp(@Body() RequestOtpRequest request);
 
   @POST("auth/verify-otp")
   Future<VerifyOtpResponse> verifyOtp(@Body() VerifyOtpRequest request);

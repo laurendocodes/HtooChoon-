@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Api/api_service/api_service.dart';
 import 'package:htoochoon_flutter/Providers/assignment_provider.dart';
@@ -11,52 +10,59 @@ import 'package:htoochoon_flutter/Providers/login_provider.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Providers/student_clr_view_provider.dart';
 import 'package:htoochoon_flutter/Providers/user_provider.dart';
+import 'package:htoochoon_flutter/Providers/auth_provider.dart';
 import 'package:htoochoon_flutter/Providers/structure_provider.dart';
 import 'package:htoochoon_flutter/Providers/subscription_provider.dart';
 import 'package:htoochoon_flutter/Providers/theme_provider.dart';
 import 'package:htoochoon_flutter/Screens/AuthScreens/login_screen.dart';
 import 'package:htoochoon_flutter/Screens/MainLayout/main_scaffold.dart';
-import 'package:htoochoon_flutter/Screens/Onboarding/onboarding_screen.dart'; // New
+import 'package:htoochoon_flutter/Screens/Onboarding/onboarding_screen.dart';
+
 import 'package:htoochoon_flutter/Theme/themedata.dart';
-import 'package:htoochoon_flutter/firebase_options.dart';
+
 import 'package:htoochoon_flutter/lms/forms/screens/lms_home_screen.dart';
 
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // New
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-  );
+
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('access_token');
+
   Dio dio = Dio();
+
+  // ✅ Attach token if exists
+  if (token != null) {
+    dio.options.headers["Authorization"] = "Bearer $token";
+  }
+
   ApiService apiService = ApiService(dio);
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => ThemeProvider()),
-        ChangeNotifierProvider(create: (context) => LoginProvider()),
-        ChangeNotifierProvider(create: (context) => UserProvider()),
-        ChangeNotifierProvider(create: (context) => OrgProvider()),
-        ChangeNotifierProvider(create: (context) => AssignmentProvider()),
-        ChangeNotifierProvider(create: (context) => StructureProvider()),
-        ChangeNotifierProvider(create: (context) => ClassProvider()),
-        ChangeNotifierProvider(create: (context) => StudentClassroomProvider()),
-        ChangeNotifierProvider(
-          create: (context) => SubscriptionProvider(),
-        ), // New
-
-        ChangeNotifierProvider(create: (context) => InvitationProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider(dio)),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => OrgProvider()),
+        ChangeNotifierProvider(create: (_) => AssignmentProvider()),
+        ChangeNotifierProvider(create: (_) => StructureProvider()),
+        ChangeNotifierProvider(create: (_) => ClassProvider()),
+        ChangeNotifierProvider(create: (_) => StudentClassroomProvider()),
+        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+        ChangeNotifierProvider(create: (_) => InvitationProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(token: token),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String? token;
+  const MyApp({super.key, this.token});
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +76,7 @@ class MyApp extends StatelessWidget {
           themeMode: themeProvider.isDarkMode
               ? ThemeMode.dark
               : ThemeMode.light,
-          home: const AuthWrapper(),
+          home: AuthWrapper(token: token),
         );
       },
     );
@@ -78,7 +84,8 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthWrapper extends StatefulWidget {
-  const AuthWrapper({super.key});
+  final String? token;
+  const AuthWrapper({super.key, this.token});
 
   @override
   State<AuthWrapper> createState() => _AuthWrapperState();
@@ -101,54 +108,43 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    if (widget.token == null) {
+      return const PremiumLoginScreen();
+    }
+
+    if (!_isInit) {
+      _isInit = true;
+      Future.microtask(() {
+        Provider.of<UserProvider>(context, listen: false).fetchUser();
+      });
+    }
+
+    return FutureBuilder<bool>(
+      future: _onboardingCheck,
+      builder: (context, onboardingSnapshot) {
+        if (onboardingSnapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (snapshot.hasData && snapshot.data != null) {
-          if (!_isInit) {
-            _isInit = true;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Provider.of<UserProvider>(context, listen: false).fetchUser();
-            });
-          }
+        final hasSeenOnboarding = onboardingSnapshot.data ?? false;
 
-          return FutureBuilder<bool>(
-            future: _onboardingCheck,
-            builder: (context, onboardingSnapshot) {
-              if (onboardingSnapshot.connectionState ==
-                  ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              final hasSeenOnboarding = onboardingSnapshot.data ?? false;
-
-              if (!hasSeenOnboarding) {
-                return const OnboardingScreen();
-              }
-
-              return Consumer<UserProvider>(
-                builder: (context, userProvider, child) {
-                  if (userProvider.isLoading) {
-                    return const Scaffold(
-                      body: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  return MainScaffold();
-                },
-              );
-            },
-          );
+        if (!hasSeenOnboarding) {
+          return const OnboardingScreen();
         }
 
-        return const PremiumLoginScreen();
+        return Consumer<UserProvider>(
+          builder: (context, userProvider, child) {
+            if (userProvider.isLoading) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            return MainScaffold();
+          },
+        );
       },
     );
   }

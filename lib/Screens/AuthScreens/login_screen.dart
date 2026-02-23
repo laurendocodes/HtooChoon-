@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:htoochoon_flutter/Providers/login_provider.dart';
+import 'package:htoochoon_flutter/Providers/auth_provider.dart';
+import 'package:htoochoon_flutter/Screens/auth/otp_screen.dart';
 import 'package:provider/provider.dart';
+
 import 'package:htoochoon_flutter/Theme/themedata.dart';
 
 // RIGHT SIDE: Education Theme
@@ -192,25 +194,23 @@ class PremiumLoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LoginProvider>(
-      builder: (context, loginProvider, child) => Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 900) {
-              // Desktop/Web: Split screen layout
-              return Row(
-                children: [
-                  const Expanded(flex: 5, child: _AuthFormSection()),
-                  Expanded(flex: 5, child: _RightSideVisual()),
-                ],
-              );
-            } else {
-              // Mobile: Single column
-              return const Center(child: _AuthFormSection());
-            }
-          },
-        ),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth > 900) {
+            // Desktop/Web: Split screen layout
+            return Row(
+              children: [
+                Expanded(flex: 5, child: _AuthFormSection()),
+                Expanded(flex: 5, child: _RightSideVisual()),
+              ],
+            );
+          } else {
+            // Mobile: Single column
+            return Center(child: _AuthFormSection());
+          }
+        },
       ),
     );
   }
@@ -251,20 +251,41 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
     });
   }
 
-  void _handleSubmit(LoginProvider provider) {
+  Future<void> _handleSubmit() async {
+    // Use mounted-safe context from the State's own context getter
+    if (!mounted) return;
+    final ctx = context; // capture once before any async gap
+
+    print("[_handleSubmit] tapped");
+
     if (_formKey.currentState!.validate()) {
-      if (_isSignUp) {
-        provider.registerUser(
-          context,
-          _emailController.text.trim(),
-          _passwordController.text,
-          _usernameController.text.trim(),
+      final authProvider = Provider.of<AuthProvider>(ctx, listen: false);
+
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      final name = _usernameController.text.trim();
+
+      final action = _isSignUp ? "register" : "login";
+      print("[_handleSubmit] action=$action email=$email");
+
+      final success = await authProvider.requestOtp(email, "VERIFY_EMAIL");
+      print("[_handleSubmit] requestOtp success=$success");
+
+      if (success && mounted) {
+        Navigator.push(
+          ctx,
+          MaterialPageRoute(
+            builder: (_) => OtpScreen(
+              email: email,
+              password: password,
+              name: name,
+              action: action,
+            ),
+          ),
         );
-      } else {
-        provider.loginWithEmail(
-          context,
-          _emailController.text.trim(),
-          _passwordController.text,
+      } else if (!success && mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(content: Text(authProvider.error ?? 'Failed to send OTP')),
         );
       }
     }
@@ -272,8 +293,8 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LoginProvider>(
-      builder: (context, loginProvider, child) => SingleChildScrollView(
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) => SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: MediaQuery.of(context).size.width > 600
               ? AppTheme.space4xl
@@ -411,11 +432,11 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
                   textColorGoogle: Theme.of(context).colorScheme.secondary,
                   textColor: Theme.of(context).colorScheme.inversePrimary,
                   isSignUp: _isSignUp,
-                  isLoading: loginProvider.isLoading,
-                  onPressed: () => _handleSubmit(loginProvider),
-                  onPressedGoogle: loginProvider.isLoading
-                      ? () {}
-                      : () => loginProvider.signInWithGoogle(context),
+                  isLoading: authProvider.isLoading,
+                  // ✅ Correct: closure with no args — _handleSubmit uses State.context
+                  onPressed: _handleSubmit,
+                  //TODO add google login
+                  onPressedGoogle: authProvider.isLoading ? () {} : () {},
                 ),
 
                 const SizedBox(height: AppTheme.spaceLg),
