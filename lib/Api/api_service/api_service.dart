@@ -8,7 +8,9 @@ import 'package:retrofit/retrofit.dart';
 
 part 'api_service.g.dart';
 
-@RestApi(baseUrl: "https://htoochoon.kargate.site/")
+const String baseUrl = "/https://htoochoon.kargate.site/";
+
+@RestApi(baseUrl: baseUrl)
 abstract class ApiService {
   factory ApiService(Dio dio, {String baseUrl}) = _ApiService;
 
