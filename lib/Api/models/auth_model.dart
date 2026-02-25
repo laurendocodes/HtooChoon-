@@ -47,17 +47,17 @@ class RequestOtpRequest {
   Map<String, dynamic> toJson() => _$RequestOtpRequestToJson(this);
 }
 
-@JsonSerializable()
-class RequestOtpResponse {
-  final String message;
-
-  RequestOtpResponse({required this.message});
-
-  factory RequestOtpResponse.fromJson(Map<String, dynamic> json) =>
-      _$RequestOtpResponseFromJson(json);
-
-  Map<String, dynamic> toJson() => _$RequestOtpResponseToJson(this);
-}
+// @JsonSerializable()
+// class RequestOtpResponse {
+//   final String message;
+//
+//   RequestOtpResponse({required this.message});
+//
+//   factory RequestOtpResponse.fromJson(Map<String, dynamic> json) =>
+//       _$RequestOtpResponseFromJson(json);
+//
+//   Map<String, dynamic> toJson() => _$RequestOtpResponseToJson(this);
+// }
 
 @JsonSerializable()
 class VerifyOtpRequest {

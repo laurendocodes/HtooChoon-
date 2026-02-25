@@ -432,7 +432,7 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
                   textColorGoogle: Theme.of(context).colorScheme.secondary,
                   textColor: Theme.of(context).colorScheme.inversePrimary,
                   isSignUp: _isSignUp,
-                  isLoading: authProvider.isLoading,
+                  isLoading: authProvider.isSubmitLoading,
                   // ✅ Correct: closure with no args — _handleSubmit uses State.context
                   onPressed: _handleSubmit,
                   //TODO add google login

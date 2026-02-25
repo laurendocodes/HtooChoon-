@@ -27,17 +27,32 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('access_token');
+  WidgetsFlutterBinding.ensureInitialized();
+  await prefs.setString(
+    'access_token',
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWVlZGI4YS00OTk5LTQyODktODlmOS03NzQzZTE0ZTVlYmYiLCJlbWFpbCI6InJlbnRpZWhlaGVAZ21haWwuY29tIiwicm9sZSI6IlNUVURFTlQiLCJpYXQiOjE3NzIwMDc4NTgsImV4cCI6MTc3MjAxMTQ1OH0.Dfy0eE0BYNbUSdSDk_ZTxkRRASpIOgN8_DjLVFsU0yk",
+  );
 
   Dio dio = Dio();
 
-  // ✅ Attach token if exists
-  if (token != null) {
-    dio.options.headers["Authorization"] = "Bearer $token";
-  }
+  // Interceptor to attach token dynamically
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('access_token');
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+
+        // Optional: always set JSON content type
+        options.headers['Content-Type'] = 'application/json';
+
+        return handler.next(options);
+      },
+    ),
+  );
 
   ApiService apiService = ApiService(dio);
 
@@ -55,14 +70,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
         ChangeNotifierProvider(create: (_) => InvitationProvider()),
       ],
-      child: MyApp(token: token),
+      child: MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final String? token;
-  const MyApp({super.key, this.token});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +90,7 @@ class MyApp extends StatelessWidget {
           themeMode: themeProvider.isDarkMode
               ? ThemeMode.dark
               : ThemeMode.light,
-          home: AuthWrapper(token: token),
+          home: AuthWrapper(),
         );
       },
     );
@@ -84,21 +98,31 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthWrapper extends StatefulWidget {
-  final String? token;
-  const AuthWrapper({super.key, this.token});
+  const AuthWrapper({super.key});
 
   @override
   State<AuthWrapper> createState() => _AuthWrapperState();
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
+  String? token;
   bool _isInit = false;
   Future<bool>? _onboardingCheck;
 
   @override
   void initState() {
     super.initState();
+    _loadToken();
     _onboardingCheck = _checkOnboarding();
+  }
+
+  Future<void> _loadToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final storedToken = prefs.getString('access_token');
+    setState(() {
+      print("token: $token");
+      token = storedToken;
+    });
   }
 
   Future<bool> _checkOnboarding() async {
@@ -108,10 +132,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.token == null) {
+    // While token is loading
+    // if (token!.isNotEmpty) {
+    //   return Center(child: CircularProgressIndicator());
+    // }
+    // If token not found → show login
+    if (token == null || token!.isEmpty) {
       return const PremiumLoginScreen();
     }
 
+    // Only fetch user once
     if (!_isInit) {
       _isInit = true;
       Future.microtask(() {

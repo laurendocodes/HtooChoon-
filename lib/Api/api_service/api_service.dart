@@ -8,7 +8,7 @@ import 'package:retrofit/retrofit.dart';
 
 part 'api_service.g.dart';
 
-const String baseUrl = "/https://htoochoon.kargate.site/";
+const String baseUrl = "https://htoochoon.kargate.site/";
 
 @RestApi(baseUrl: baseUrl)
 abstract class ApiService {
@@ -20,7 +20,7 @@ abstract class ApiService {
   );
 
   @POST("auth/request-otp")
-  Future<RequestOtpResponse> requestOtp(@Body() RequestOtpRequest request);
+  Future<String> requestOtp(@Body() RequestOtpRequest request);
 
   @POST("auth/verify-otp")
   Future<VerifyOtpResponse> verifyOtp(@Body() VerifyOtpRequest request);
