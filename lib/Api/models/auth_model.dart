@@ -1,3 +1,4 @@
+import 'package:htoochoon_flutter/Api/models/user_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:retrofit/http.dart';
 part 'auth_model.g.dart';
@@ -8,6 +9,7 @@ class RegisterAccountRequest {
 
   final String name;
   final String password;
+  AuthMeResponse? user;
 
   RegisterAccountRequest({
     required this.email,
@@ -19,6 +21,28 @@ class RegisterAccountRequest {
       _$RegisterAccountRequestFromJson(json);
 
   Map<String, dynamic> toJson() => _$RegisterAccountRequestToJson(this);
+}
+
+@JsonSerializable()
+class AuthMeResponse {
+  final String id;
+  final String email;
+  final String name;
+  final String role;
+  final bool isActive;
+
+  AuthMeResponse({
+    required this.id,
+    required this.email,
+    required this.name,
+    required this.role,
+    required this.isActive,
+  });
+
+  factory AuthMeResponse.fromJson(Map<String, dynamic> json) =>
+      _$AuthMeResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$AuthMeResponseToJson(this);
 }
 
 @JsonSerializable()
@@ -47,17 +71,17 @@ class RequestOtpRequest {
   Map<String, dynamic> toJson() => _$RequestOtpRequestToJson(this);
 }
 
-// @JsonSerializable()
-// class RequestOtpResponse {
-//   final String message;
-//
-//   RequestOtpResponse({required this.message});
-//
-//   factory RequestOtpResponse.fromJson(Map<String, dynamic> json) =>
-//       _$RequestOtpResponseFromJson(json);
-//
-//   Map<String, dynamic> toJson() => _$RequestOtpResponseToJson(this);
-// }
+@JsonSerializable()
+class RequestOtpResponse {
+  final String message;
+
+  RequestOtpResponse({required this.message});
+
+  factory RequestOtpResponse.fromJson(Map<String, dynamic> json) =>
+      _$RequestOtpResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RequestOtpResponseToJson(this);
+}
 
 @JsonSerializable()
 class VerifyOtpRequest {
@@ -75,8 +99,8 @@ class VerifyOtpRequest {
 @JsonSerializable()
 class VerifyOtpResponse {
   final String message;
-  final String action;
-  VerifyOtpResponse({required this.message, required this.action});
+
+  VerifyOtpResponse({required this.message});
 
   factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) =>
       _$VerifyOtpResponseFromJson(json);

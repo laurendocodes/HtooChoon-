@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Providers/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:htoochoon_flutter/Providers/auth_provider.dart';
 
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 
-import '../../Providers/user_provider.dart';
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:htoochoon_flutter/Providers/user_provider.dart';
-
-import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -30,47 +22,47 @@ class _ProfileTabState extends State<ProfileTab> {
 
   final ImagePicker _picker = ImagePicker();
 
-  Future<void> _pickProfileImage(UserProvider provider) async {
-    final XFile? file = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 75,
-    );
+  // Future<void> _pickProfileImage(UserProvider provider) async {
+  //   final XFile? file = await _picker.pickImage(
+  //     source: ImageSource.gallery,
+  //     imageQuality: 75,
+  //   );
+  //
+  //   if (file == null) return;
+  //
+  //   setState(() {
+  //     _pickedImage = File(file.path);
+  //   });
+  //
+  //   await _uploadProfileImage(provider);
+  // }
 
-    if (file == null) return;
-
-    setState(() {
-      _pickedImage = File(file.path);
-    });
-
-    await _uploadProfileImage(provider);
-  }
-
-  Future<void> _uploadProfileImage(UserProvider provider) async {
-    if (_pickedImage == null) return;
-
-    try {
-      setState(() => _isUploadingImage = true);
-
-      await provider.updateProfilePhoto(_pickedImage!);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile photo updated')));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to upload image')));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUploadingImage = false;
-          _pickedImage = null;
-        });
-      }
-    }
-  }
+  // Future<void> _uploadProfileImage(UserProvider provider) async {
+  //   if (_pickedImage == null) return;
+  //
+  //   try {
+  //     setState(() => _isUploadingImage = true);
+  //
+  //     await provider.updateProfilePhoto(_pickedImage!);
+  //
+  //     if (!mounted) return;
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(const SnackBar(content: Text('Profile photo updated')));
+  //   } catch (e) {
+  //     if (!mounted) return;
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(const SnackBar(content: Text('Failed to upload image')));
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         _isUploadingImage = false;
+  //         _pickedImage = null;
+  //       });
+  //     }
+  //   }
+  // }
 
   void _showEditNameDialog(
     BuildContext context,
@@ -97,10 +89,10 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(width: AppTheme.spaceXs),
           ElevatedButton(
             onPressed: () async {
-              if (controller.text.trim().isEmpty) return;
-
-              await provider.updateProfile(name: controller.text.trim());
-              if (ctx.mounted) Navigator.pop(ctx);
+              // if (controller.text.trim().isEmpty) return;
+              //
+              // await provider.updateProfile(name: controller.text.trim());
+              // if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('Save'),
           ),
@@ -111,10 +103,10 @@ class _ProfileTabState extends State<ProfileTab> {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = context.watch<UserProvider>();
-    final user = userProvider.userData;
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
 
-    if (userProvider.isLoading && user == null) {
+    if (authProvider.isLoading && user == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -140,8 +132,8 @@ class _ProfileTabState extends State<ProfileTab> {
       );
     }
 
-    final String displayName = user['name'] ?? user['username'] ?? 'User';
-    final String? photoUrl = user['photo'];
+    final String displayName = user.name;
+    // final String? photoUrl = user['photo'];
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -168,20 +160,28 @@ class _ProfileTabState extends State<ProfileTab> {
                   backgroundColor: Theme.of(
                     context,
                   ).colorScheme.primary.withOpacity(0.1),
-                  backgroundImage: _pickedImage != null
-                      ? FileImage(_pickedImage!)
-                      : (photoUrl != null ? NetworkImage(photoUrl) : null)
-                            as ImageProvider?,
-                  child: photoUrl == null && _pickedImage == null
-                      ? Text(
-                          displayName[0].toUpperCase(),
-                          style: Theme.of(context).textTheme.displaySmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                        )
-                      : null,
+
+                  // backgroundImage: _pickedImage != null
+                  //     ? FileImage(_pickedImage!)
+                  //     : (photoUrl != null ? NetworkImage(photoUrl) : null)
+                  //           as ImageProvider?,
+                  // child: photoUrl == null && _pickedImage == null
+                  //     ? Text(
+                  //         displayName[0].toUpperCase(),
+                  //         style: Theme.of(context).textTheme.displaySmall
+                  //             ?.copyWith(
+                  //               fontWeight: FontWeight.w700,
+                  //               color: Theme.of(context).colorScheme.primary,
+                  //             ),
+                  //       )
+                  //     : null,
+                  child: Text(
+                    displayName[0].toUpperCase(),
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 ),
 
                 // Camera Button
@@ -189,9 +189,10 @@ class _ProfileTabState extends State<ProfileTab> {
                   bottom: 0,
                   right: 0,
                   child: GestureDetector(
-                    onTap: _isUploadingImage
-                        ? null
-                        : () => _pickProfileImage(userProvider),
+                    onTap: () {},
+                    // _isUploadingImage
+                    //     ? null
+                    //     : () => _pickProfileImage(userProvider),
                     child: Container(
                       padding: const EdgeInsets.all(AppTheme.spaceXs),
                       decoration: BoxDecoration(
@@ -236,7 +237,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
             // Email
             Text(
-              user['email'] ?? '',
+              user.email ?? '',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppTheme.getTextSecondary(context),
               ),
@@ -283,7 +284,7 @@ class _ProfileTabState extends State<ProfileTab> {
                         ),
                         const SizedBox(height: AppTheme.space2xs),
                         Text(
-                          (user['plan'] ?? 'Free').toString().toUpperCase(),
+                          ('Free').toString().toUpperCase(),
                           style: Theme.of(context).textTheme.bodyLarge
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
@@ -304,8 +305,8 @@ class _ProfileTabState extends State<ProfileTab> {
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.edit, size: 20),
                 label: const Text('Edit Name'),
-                onPressed: () =>
-                    _showEditNameDialog(context, userProvider, user),
+                onPressed: () {},
+                // _showEditNameDialog(context, userProvider, user),
               ),
             ),
 
@@ -335,7 +336,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   _SettingItem(
                     icon: Icons.email_outlined,
                     title: 'Email',
-                    subtitle: user['email'] ?? '',
+                    subtitle: user.email ?? '',
                     onTap: () {},
                   ),
                   Divider(height: 1, color: AppTheme.getBorder(context)),

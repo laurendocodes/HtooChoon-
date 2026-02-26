@@ -29,10 +29,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() async {
   final prefs = await SharedPreferences.getInstance();
   WidgetsFlutterBinding.ensureInitialized();
-  await prefs.setString(
-    'access_token',
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWVlZGI4YS00OTk5LTQyODktODlmOS03NzQzZTE0ZTVlYmYiLCJlbWFpbCI6InJlbnRpZWhlaGVAZ21haWwuY29tIiwicm9sZSI6IlNUVURFTlQiLCJpYXQiOjE3NzIwMDc4NTgsImV4cCI6MTc3MjAxMTQ1OH0.Dfy0eE0BYNbUSdSDk_ZTxkRRASpIOgN8_DjLVFsU0yk",
-  );
 
   Dio dio = Dio();
 
@@ -54,14 +50,14 @@ void main() async {
     ),
   );
 
-  ApiService apiService = ApiService(dio);
+  // ApiService apiService = ApiService(dio);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider(dio)),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
+        // ChangeNotifierProvider(create: (_) => AuthProvider(apiService)),
+        // ChangeNotifierProvider(create: (_) => UserProvider(apiService)),
         ChangeNotifierProvider(create: (_) => OrgProvider()),
         ChangeNotifierProvider(create: (_) => AssignmentProvider()),
         ChangeNotifierProvider(create: (_) => StructureProvider()),
@@ -112,6 +108,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   void initState() {
     super.initState();
+
     _loadToken();
     _onboardingCheck = _checkOnboarding();
   }
@@ -123,6 +120,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
       print("token: $token");
       token = storedToken;
     });
+    // await prefs.setString(
+    //   'access_token',
+    //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWVlZGI4YS00OTk5LTQyODktODlmOS03NzQzZTE0ZTVlYmYiLCJlbWFpbCI6InJlbnRpZWhlaGVAZ21haWwuY29tIiwicm9sZSI6IlNUVURFTlQiLCJpYXQiOjE3NzIwMDc4NTgsImV4cCI6MTc3MjAxMTQ1OH0.Dfy0eE0BYNbUSdSDk_ZTxkRRASpIOgN8_DjLVFsU0yk",
+    // );
+    //
+    // final storedToken = prefs.getString('access_token');
+    //
+    // setState(() {
+    //   print("token: $token");
+    //   token = storedToken;
+    // });
   }
 
   Future<bool> _checkOnboarding() async {
@@ -145,7 +153,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     if (!_isInit) {
       _isInit = true;
       Future.microtask(() {
-        Provider.of<UserProvider>(context, listen: false).fetchUser();
+        Provider.of<AuthProvider>(context, listen: false).fetchMe();
       });
     }
 

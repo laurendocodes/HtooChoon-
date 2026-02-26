@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:htoochoon_flutter/Providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Providers/user_provider.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
@@ -8,11 +9,11 @@ class HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-    final user = userProvider.userData;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (userProvider.isLoading && user == null) {
+    if (authProvider.isLoading && user == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -38,7 +39,7 @@ class HomeTab extends StatelessWidget {
       );
     }
 
-    final displayName = user['name'] ?? user['username'] ?? 'Student';
+    final displayName = user.name;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

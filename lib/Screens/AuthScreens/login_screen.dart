@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:htoochoon_flutter/Api/models/auth_model.dart';
 import 'package:htoochoon_flutter/Providers/auth_provider.dart';
+import 'package:htoochoon_flutter/Screens/MainLayout/main_scaffold.dart';
 import 'package:htoochoon_flutter/Screens/auth/otp_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -24,35 +26,37 @@ class RightSideVisual extends StatelessWidget {
           ],
         ),
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Floating Education 3D Image Placeholder
-            Container(
-              height: 450,
-              width: 450,
-              decoration: BoxDecoration(
-                image: const DecorationImage(
-                  // 3D Education/Rocket/Book illustration
-                  image: NetworkImage(
-                    'https://cdn3d.iconscout.com/3d/premium/thumb/online-education-4635835-3864077.png',
+      child: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Floating Education 3D Image Placeholder
+              Container(
+                height: 450,
+                width: 450,
+                decoration: BoxDecoration(
+                  image: const DecorationImage(
+                    // 3D Education/Rocket/Book illustration
+                    image: NetworkImage(
+                      'https://cdn3d.iconscout.com/3d/premium/thumb/online-education-4635835-3864077.png',
+                    ),
+                    fit: BoxFit.contain,
                   ),
-                  fit: BoxFit.contain,
-                ),
 
-                // Soft shadow for depth
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF4D7CFE).withOpacity(0.2),
-                    blurRadius: 60,
-                    spreadRadius: 10,
-                    offset: const Offset(0, 30),
-                  ),
-                ],
+                  // Soft shadow for depth
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4D7CFE).withOpacity(0.2),
+                      blurRadius: 60,
+                      spreadRadius: 10,
+                      offset: const Offset(0, 30),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -268,25 +272,39 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
       final action = _isSignUp ? "register" : "login";
       print("[_handleSubmit] action=$action email=$email");
 
-      final success = await authProvider.requestOtp(email, "VERIFY_EMAIL");
-      print("[_handleSubmit] requestOtp success=$success");
-
-      if (success && mounted) {
-        Navigator.push(
-          ctx,
-          MaterialPageRoute(
-            builder: (_) => OtpScreen(
-              email: email,
-              password: password,
-              name: name,
-              action: action,
+      if (action == "register") {
+        final success = await authProvider.requestOtp(email, "VERIFY_EMAIL");
+        print("[_handleSubmit] requestOtp success=$success");
+        if (success && mounted) {
+          Navigator.push(
+            ctx,
+            MaterialPageRoute(
+              builder: (_) => OtpScreen(
+                email: email,
+                password: password,
+                name: name,
+                action: action,
+              ),
             ),
-          ),
-        );
-      } else if (!success && mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(content: Text(authProvider.error ?? 'Failed to send OTP')),
-        );
+          );
+        } else if (!success && mounted) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            SnackBar(content: Text(authProvider.error ?? 'Failed to send OTP')),
+          );
+        }
+      } else if (action == "login") {
+        final request = LoginRequest(email: email, password: password);
+        final success = await authProvider.login(request);
+        if (success && mounted) {
+          Navigator.push(
+            ctx,
+            MaterialPageRoute(builder: (_) => MainScaffold()),
+          );
+        } else if (!success && mounted) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            SnackBar(content: Text(authProvider.error ?? 'Failed to Login')),
+          );
+        }
       }
     }
   }
