@@ -50,14 +50,14 @@ void main() async {
     ),
   );
 
-  // ApiService apiService = ApiService(dio);
+  ApiService apiService = ApiService(dio);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        // ChangeNotifierProvider(create: (_) => AuthProvider(apiService)),
-        // ChangeNotifierProvider(create: (_) => UserProvider(apiService)),
+        ChangeNotifierProvider(create: (_) => AuthProvider(apiService)),
+        ChangeNotifierProvider(create: (_) => UserProvider(apiService)),
         ChangeNotifierProvider(create: (_) => OrgProvider()),
         ChangeNotifierProvider(create: (_) => AssignmentProvider()),
         ChangeNotifierProvider(create: (_) => StructureProvider()),
