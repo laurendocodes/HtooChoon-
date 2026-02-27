@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Notificaton/announcements_widget.dart';
 import 'package:htoochoon_flutter/Notificaton/noti&emails.dart';
+import 'package:htoochoon_flutter/Providers/auth_provider.dart';
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Providers/theme_provider.dart';
 import 'package:htoochoon_flutter/Providers/login_provider.dart';
+import 'package:htoochoon_flutter/Screens/AuthScreens/login_screen.dart';
 import 'package:htoochoon_flutter/Screens/Classes/classes_tab.dart';
 import 'package:htoochoon_flutter/Screens/Courses/courses_tab.dart';
 import 'package:htoochoon_flutter/Screens/Home/home_tab.dart';
@@ -32,14 +34,14 @@ class _MainScaffoldState extends State<MainScaffold> {
     CoursesTab(),
     OrgContextLoader(),
     ProfileTab(),
-    NotiAndEmails(),
+    // NotiAndEmails(),
   ];
 
   @override
   Widget build(BuildContext context) {
     final isExtended = MediaQuery.of(context).size.width > 900;
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final loginProvider = Provider.of<LoginProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final orgProvider = context.watch<OrgProvider>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (orgProvider.justSwitched) {
@@ -81,7 +83,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                   setState(() => _selectedIndex = index);
                 },
                 themeProvider: themeProvider,
-                loginProvider: loginProvider,
+                authProvider: authProvider,
               ),
 
               VerticalDivider(
@@ -111,14 +113,14 @@ class _PremiumNavigationRail extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final ThemeProvider themeProvider;
-  final LoginProvider loginProvider;
+  final AuthProvider authProvider;
 
   const _PremiumNavigationRail({
     required this.isExtended,
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.themeProvider,
-    required this.loginProvider,
+    required this.authProvider,
   });
 
   @override
@@ -249,7 +251,13 @@ class _PremiumNavigationRail extends StatelessWidget {
             icon: Icons.logout_rounded,
             label: 'Logout',
             isExtended: isExtended,
-            onTap: () => loginProvider.logout(context),
+            onTap: () {
+              authProvider.logout();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => PremiumLoginScreen()),
+              );
+            },
             color: AppTheme.error,
           ),
         ],

@@ -257,8 +257,8 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
 
   Future<void> _handleSubmit() async {
     // Use mounted-safe context from the State's own context getter
-    if (!mounted) return;
-    final ctx = context; // capture once before any async gap
+
+    final ctx = context;
 
     print("[_handleSubmit] tapped");
 
@@ -273,20 +273,32 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
       print("[_handleSubmit] action=$action email=$email");
 
       if (action == "register") {
-        final success = await authProvider.requestOtp(email, "VERIFY_EMAIL");
+        // final success = await authProvider.requestOtp(email, "VERIFY_EMAIL");
+        final request = RegisterAccountRequest(
+          name: _usernameController.text,
+          email: email,
+          password: password,
+        );
+        final success = await authProvider.register(request);
         print("[_handleSubmit] requestOtp success=$success");
         if (success && mounted) {
-          Navigator.push(
-            ctx,
-            MaterialPageRoute(
-              builder: (_) => OtpScreen(
-                email: email,
-                password: password,
-                name: name,
-                action: action,
+          try {
+            await authProvider.requestOtp(email, "VERIFY_EMAIL");
+          } catch (e) {
+            print("request otp error: ${e.toString()}");
+          } finally {
+            Navigator.push(
+              ctx,
+              MaterialPageRoute(
+                builder: (_) => OtpScreen(
+                  email: email,
+                  password: password,
+                  name: name,
+                  action: action,
+                ),
               ),
-            ),
-          );
+            );
+          }
         } else if (!success && mounted) {
           ScaffoldMessenger.of(ctx).showSnackBar(
             SnackBar(content: Text(authProvider.error ?? 'Failed to send OTP')),
@@ -346,8 +358,8 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
                 if (_isSignUp) ...[
                   _FormField(
                     controller: _usernameController,
-                    label: 'Username',
-                    hint: 'Choose a unique username',
+                    label: 'Fullname',
+                    hint: 'Enter your Fullname',
                     prefixIcon: Icons.person_outline,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -450,8 +462,8 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
                   textColorGoogle: Theme.of(context).colorScheme.secondary,
                   textColor: Theme.of(context).colorScheme.inversePrimary,
                   isSignUp: _isSignUp,
-                  isLoading: authProvider.isSubmitLoading,
-                  // ✅ Correct: closure with no args — _handleSubmit uses State.context
+                  isLoading: authProvider.isLoading,
+
                   onPressed: _handleSubmit,
                   //TODO add google login
                   onPressedGoogle: authProvider.isLoading ? () {} : () {},
@@ -851,8 +863,6 @@ class _RightSideVisual extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: AppTheme.space3xl),
-
             // Feature highlights
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -903,7 +913,7 @@ class _FeatureItem extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(AppTheme.spaceSm),
+          padding: const EdgeInsets.all(AppTheme.spaceXs),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor.withOpacity(0.5),
             borderRadius: AppTheme.borderRadiusMd,

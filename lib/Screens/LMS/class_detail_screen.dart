@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:htoochoon_flutter/Providers/login_provider.dart';
+import 'package:htoochoon_flutter/Providers/auth_provider.dart';
+
 import 'package:htoochoon_flutter/Screens/OrgScreens/OrgMainScreens/OrgWidgets/org_dashboard_widgets.dart';
 import 'package:htoochoon_flutter/lms/forms/screens/lms_home_screen.dart';
 import 'package:provider/provider.dart';
@@ -20,37 +21,40 @@ class ClassDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<OrgProvider, LoginProvider>(
-      builder: (context, orgProvider, loginProvider, child) =>
-          DefaultTabController(
-            length: 4,
-            child: Scaffold(
-              appBar: AppBar(
-                title: Text(className),
-                bottom: const TabBar(
-                  isScrollable: true,
-                  tabs: [
-                    Tab(text: 'Overview'),
-                    Tab(text: 'Assignments'),
-                    Tab(text: 'Live Sessions'),
-                    Tab(text: 'People'),
+    return Consumer2<OrgProvider, AuthProvider>(
+      builder: (context, orgProvider, authProvider, child) =>
+          (authProvider.user == null)
+          ? CircularProgressIndicator()
+          : DefaultTabController(
+              length: 4,
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text(className),
+                  bottom: const TabBar(
+                    isScrollable: true,
+                    tabs: [
+                      Tab(text: 'Overview'),
+                      Tab(text: 'Assignments'),
+                      Tab(text: 'Live Sessions'),
+                      Tab(text: 'People'),
+                    ],
+                  ),
+                ),
+                body: TabBarView(
+                  children: [
+                    _buildOverviewTab(context),
+                    LmsHomeScreen(
+                      userId: authProvider.user!.id.toString(),
+                      userRole: "teacher", // handled constantly by screens
+                      classId: classId,
+                    ),
+                    LiveSessionListScreen(classId: classId),
+                    //TODO OPEN
+                    // _buildPeopleTab(context, orgProvider),
                   ],
                 ),
               ),
-              body: TabBarView(
-                children: [
-                  _buildOverviewTab(context),
-                  LmsHomeScreen(
-                    userId: loginProvider.uid.toString(),
-                    userRole: "teacher", // handled constantly by screens
-                    classId: classId,
-                  ),
-                  LiveSessionListScreen(classId: classId),
-                  _buildPeopleTab(context, orgProvider),
-                ],
-              ),
             ),
-          ),
     );
   }
 
@@ -104,62 +108,62 @@ class ClassDetailScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildPeopleTab(BuildContext context, OrgProvider orgProvider) {
-    // TODO: Replace these dummy lists with data from real Provider
-    // final orgProvider = Provider.of<OrgProvider>(context);
-    // final teachers = orgProvider.getTeachers(classId);
-
-    final List<String> teachers = ["Mr. Anderson"];
-    final List<String> students = [
-      "Alice Johnson",
-      "Bob Smith",
-      "Charlie Brown",
-      "Diana Prince",
-    ];
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // --- Teachers Section ---
-          _buildSectionHeader(context, "Teachers"),
-          ...teachers.map(
-            (name) => _buildPersonTile(context, name, isTeacher: true),
-          ),
-
-          const SizedBox(height: 32),
-
-          // --- Students Section ---
-          _buildSectionHeader(
-            context,
-            "Students",
-            // The Invite Button
-            trailing: IconButton(
-              icon: Icon(
-                Icons.person_add_alt_1,
-                color: Theme.of(context).primaryColor,
-              ),
-              onPressed: () => showInviteStudentDialog(context, orgProvider),
-            ),
-          ),
-
-          // Student Count
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 8),
-            child: Text(
-              "${students.length} students",
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
-          ),
-
-          // Student List
-          ...students.map((name) => _buildPersonTile(context, name)),
-        ],
-      ),
-    );
-  }
+  //TODO2 OPEN
+  // Widget _buildPeopleTab(BuildContext context, OrgProvider orgProvider) {
+  //   // TODO: Replace these dummy lists with data from real Provider
+  //   // final orgProvider = Provider.of<OrgProvider>(context);
+  //   // final teachers = orgProvider.getTeachers(classId);
+  //
+  //   final List<String> teachers = ["Mr. Anderson"];
+  //   final List<String> students = [
+  //     "Alice Johnson",
+  //     "Bob Smith",
+  //     "Charlie Brown",
+  //     "Diana Prince",
+  //   ];
+  //
+  //   return SingleChildScrollView(
+  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         // --- Teachers Section ---
+  //         _buildSectionHeader(context, "Teachers"),
+  //         ...teachers.map(
+  //           (name) => _buildPersonTile(context, name, isTeacher: true),
+  //         ),
+  //
+  //         const SizedBox(height: 32),
+  //
+  //         // --- Students Section ---
+  //         _buildSectionHeader(
+  //           context,
+  //           "Students",
+  //           // The Invite Button
+  //           trailing: IconButton(
+  //             icon: Icon(
+  //               Icons.person_add_alt_1,
+  //               color: Theme.of(context).primaryColor,
+  //             ),
+  //             onPressed: () => showInviteStudentDialog(context, orgProvider),
+  //           ),
+  //         ),
+  //
+  //         // Student Count
+  //         Padding(
+  //           padding: const EdgeInsets.only(top: 8, bottom: 8),
+  //           child: Text(
+  //             "${students.length} students",
+  //             style: TextStyle(color: Colors.grey[600], fontSize: 12),
+  //           ),
+  //         ),
+  //
+  //         // Student List
+  //         ...students.map((name) => _buildPersonTile(context, name)),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Helper widget for the headers (Teachers/Students)
   Widget _buildSectionHeader(

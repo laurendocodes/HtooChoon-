@@ -3,9 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Api/api_service/api_service.dart';
 import 'package:htoochoon_flutter/Providers/assignment_provider.dart';
-import 'package:htoochoon_flutter/Providers/class_provider.dart';
+
 import 'package:htoochoon_flutter/Providers/invitation_provider.dart';
-import 'package:htoochoon_flutter/Providers/login_provider.dart';
 
 import 'package:htoochoon_flutter/Providers/org_provider.dart';
 import 'package:htoochoon_flutter/Providers/student_clr_view_provider.dart';
@@ -58,12 +57,10 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider(apiService)),
         ChangeNotifierProvider(create: (_) => UserProvider(apiService)),
-        ChangeNotifierProvider(create: (_) => OrgProvider()),
+        // ChangeNotifierProvider(create: (_) => OrgProvider()),
         ChangeNotifierProvider(create: (_) => AssignmentProvider()),
         ChangeNotifierProvider(create: (_) => StructureProvider()),
-        ChangeNotifierProvider(create: (_) => ClassProvider()),
-        ChangeNotifierProvider(create: (_) => StudentClassroomProvider()),
-        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+
         ChangeNotifierProvider(create: (_) => InvitationProvider()),
       ],
       child: MyApp(),
